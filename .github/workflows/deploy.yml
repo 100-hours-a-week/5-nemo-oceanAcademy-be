@@ -58,4 +58,4 @@ jobs:
             docker stop $(docker ps -a -q) || true
             docker rm $(docker ps -a -q) || true
             docker rmi $(docker images -a -q) || true
-            docker run -d -p 80:8080 ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
+            docker run -d -p 5000:8080 ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
