@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: '17'
+          distribution: 'temurin'
 
       - name: Build with Gradle
         run: ./gradlew clean build
@@ -33,6 +34,11 @@ jobs:
           docker tag nemo-be:latest ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
 
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build  # build job이 성공적으로 완료되어야만 deploy job이 실행됩니다.
+
+    steps:
       - name: SSH를 위한 디렉토리 및 키 설정
         run: |
           mkdir -p ~/.ssh
