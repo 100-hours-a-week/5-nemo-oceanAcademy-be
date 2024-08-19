@@ -1,4 +1,4 @@
-package com.nemo.oceanAcademy.domain.clazz.dto;
+package com.nemo.oceanAcademy.domain.classroom.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ClazzDto {
+public class ClassroomDto {
 
     //PK 강의실 아이디, 식별자
     private Long id;
@@ -29,14 +29,10 @@ public class ClazzDto {
     private String instructorInfo;
     //강의 사전지식 및 준비물, 선택적 작성
     private String prerequisite;
-    //강의실 배너 사진 경로, 선택적 작성
-    private String bannerImagePath;
     //강의실 공지
     private String announcement;
+    //강의실 배너 사진 경로, 선택적 작성
+    private String bannerImagePath;
     //강의실 라이브 강의 활성화 여부
     private Boolean isActive;
-    //강의실 생성 시각
-    private LocalDateTime createdAt;
-    //강의실 삭제 시각 - soft delete
-    private LocalDateTime deletedAt;
 }
