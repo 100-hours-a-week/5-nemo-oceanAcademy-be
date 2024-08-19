@@ -1,6 +1,5 @@
 package com.nemo.oceanAcademy.domain.user.service;
 
-import com.nemo.oceanAcademy.domain.auth.service.AuthService;
 import com.nemo.oceanAcademy.domain.user.entity.User;
 import com.nemo.oceanAcademy.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
