@@ -36,7 +36,8 @@ dependencies {
 	implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
 
 	// dotenv-java
-	implementation 'io.github.cdimascio:dotenv-java:2.2.0'
+	implementation 'io.github.cdimascio:java-dotenv:5.2.2'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	// 데이터베이스
 	runtimeOnly 'com.h2database:h2'                 // H2 Database (테스트용)
