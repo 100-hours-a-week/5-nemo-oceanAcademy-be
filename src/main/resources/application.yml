@@ -3,13 +3,6 @@ spring:
         active: local
     jackson:
         property-naming-strategy: SNAKE_CASE
-
-    datasource:
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        hikari:
-            maximum-pool-size: 10
-            minimum-idle: 5
-
     jpa:
         hibernate:
             ddl-auto: update
@@ -20,19 +13,36 @@ spring:
                 format_sql: true
                 highlight_sql: true
 
-logging:
-    level:
-        org.hibernate.SQL: debug
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        hikari:
+            maximum-pool-size: 10
+            minimum-idle: 5
+        url: jdbc:mysql://oceanacademydb.cx0u8okkguoh.ap-northeast-2.rds.amazonaws.com:3306/OceanAcademyDB
+        username: root
+        password: Nemo0325!!
+
+    security:
+        oauth2:
+            client:
+                registration:
+                    kakao:
+                        client-id: 7d7c12cfa0f81fb0e951a7c1ca8f49db
+                        client-secret: EHZZ7q9KdKvLtEMlskLwk1iM5bpQUSpr
+                        redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+                        authorization-grant-type: authorization_code
+                        scope: profile_nickname, profile_image
+                        client-authentication-method: POST
+                        client-name: Kakao
+                provider:
+                    kakao:
+                        authorization-uri: https://kauth.kakao.com/oauth/authorize
+                        token-uri: https://kauth.kakao.com/oauth/token
+                        user-info-uri: https://kapi.kakao.com/v2/user/me
+                        user-name-attribute: id
+    logging:
+        level:
+            org.hibernate.SQL: debug
 
 file:
     upload-dir: src/main/resources/static
-
-
-
-#cloud:
-#    aws:
-#        s3:
-#            bucket-name: ${S3_BUCKET_NAME}
-#            access-key: ${S3_ACCESS_KEY}
-#            secret-key: ${S3_SECRET_KEY}
-#            region: ${S3_REGION}

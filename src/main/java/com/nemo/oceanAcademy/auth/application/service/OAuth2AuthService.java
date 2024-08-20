@@ -24,7 +24,7 @@ public class OAuth2AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
     // 파일 저장 경로
-    private final String uploadDir = "src/main/resources/images"; // 경로는 환경 변수나 yml에서 설정하는 것이 좋음
+    private final String uploadDir = "src/main/resources/static";
 
     // 회원가입 여부 확인
     public boolean isUserSignedUp(String userId) {
