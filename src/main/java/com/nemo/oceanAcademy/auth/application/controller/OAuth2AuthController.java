@@ -1,7 +1,8 @@
 package com.nemo.oceanAcademy.auth.application.controller;
 
+import com.nemo.oceanAcademy.auth.application.dto.TokenResponseDTO;
 import com.nemo.oceanAcademy.auth.application.service.OAuth2AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.nemo.oceanAcademy.auth.security.JwtTokenProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,36 +12,39 @@ import org.springframework.web.multipart.MultipartFile;
 public class OAuth2AuthController {
 
     private final OAuth2AuthService authService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    public OAuth2AuthController(OAuth2AuthService authService) {
+    public OAuth2AuthController(OAuth2AuthService authService, JwtTokenProvider jwtTokenProvider) {
         this.authService = authService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    // 회원가입 여부 확인
     @GetMapping("/signup")
     public ResponseEntity<String> checkSignup(@RequestParam("user_id") String userId) {
         boolean isSignedUp = authService.isUserSignedUp(userId);
         if (isSignedUp) {
             return ResponseEntity.ok("이미 가입된 회원입니다.");
         }
-        return ResponseEntity.status(204).body("회원 기록이 없습니다");
+        return ResponseEntity.noContent().build(); // 가입되지 않은 회원이면 204 No Content
     }
 
-    // OAuth2 회원가입
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(@RequestParam("user_id") String userId,
-                                         @RequestParam("nickname") String nickname,
-                                         @RequestPart(value = "file", required = false) MultipartFile file) {
-        boolean isCreated = authService.signupUser(userId, nickname, file);
-        if (isCreated) {
-            return ResponseEntity.status(201).body("회원가입이 완료되었습니다.");
-        }
-        return ResponseEntity.status(400).body("회원가입에 실패하였습니다.");
+    public ResponseEntity<TokenResponseDTO> signup(
+            @RequestParam("user_id") String userId,
+            @RequestParam("nickname") String nickname,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+
+        TokenResponseDTO tokenResponse = authService.signupUser(userId, nickname, file);
+        return ResponseEntity.status(201).body(tokenResponse);
     }
 
-    // Soft Delete로 회원 탈퇴 (회원 탈퇴 상태로 수정)
-    @PatchMapping("/signup")
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenResponseDTO> refreshAccessToken(@RequestParam("refreshToken") String refreshToken) {
+        String newAccessToken = jwtTokenProvider.refreshAccessToken(refreshToken);
+        return ResponseEntity.ok(new TokenResponseDTO(newAccessToken, refreshToken));
+    }
+
+    @DeleteMapping("/signup")
     public ResponseEntity<String> withdraw(@RequestParam("user_id") String userId) {
         boolean isDeleted = authService.softDeleteUser(userId);
         if (isDeleted) {
