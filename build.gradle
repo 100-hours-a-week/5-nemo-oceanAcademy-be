@@ -25,12 +25,12 @@ repositories {
 
 dependencies {
 	// Spring Boot 관련 의존성
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'      // JPA & Hibernate
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // OAuth2 클라이언트
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server' // OAuth2 리소스 서버
-	implementation 'org.springframework.boot:spring-boot-starter-security'      // Spring Security
-	implementation 'org.springframework.boot:spring-boot-starter-web'           // Spring Web (REST API)
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'     // WebSocket 지원
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'      			// JPA & Hibernate
+	implementation 'org.springframework.boot:spring-boot-starter-security'      			// Spring Security
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' 			// OAuth2 클라이언트
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server' 	// OAuth2 리소스 서버
+	implementation 'org.springframework.boot:spring-boot-starter-web'           			// Spring Web (REST API)
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'     			// WebSocket 지원
 
 	// servlet
 	implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
