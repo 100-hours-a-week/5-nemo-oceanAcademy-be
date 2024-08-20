@@ -9,13 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,15 +23,18 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final S3Client s3Client;
 
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
+    // S3 관련 설정 (임시 주석 처리)
+    // private final S3Client s3Client;
+
+    // 파일 저장 경로를 application.yml에서 불러옴
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     @Autowired
-    public UserService(UserRepository userRepository, S3Client s3Client) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.s3Client = s3Client;
+        // this.s3Client = s3Client;
     }
 
     // 사용자 정보 조회
@@ -67,9 +70,9 @@ public class UserService {
                 user.setEmail(userUpdateDTO.getEmail());
             }
 
-            // 파일이 있으면 S3에 업로드 후 경로 설정
+            // 파일이 있으면 디렉토리에 업로드 후 경로 설정
             if (file != null && !file.isEmpty()) {
-                String fileName = uploadFileToS3(file);
+                String fileName = saveFileToDirectory(file);
                 user.setProfileImagePath(fileName);
             }
 
@@ -82,9 +85,23 @@ public class UserService {
         return !userRepository.existsByNickname(nickname); // 닉네임 중복 확인
     }
 
-    // S3 파일 업로드 로직
+    // 로컬 디렉토리에 파일 저장 로직
+    private String saveFileToDirectory(MultipartFile file) {
+        try {
+            String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();      // 고유한 파일 이름 생성
+            Path filePath = Paths.get(uploadDir + File.separator + fileName);                  // images 폴더에 저장
+            Files.createDirectories(filePath.getParent());                                          // 저장 경로가 없으면 생성
+            Files.write(filePath, file.getBytes());                                                 // 파일 저장
+            return filePath.toString();                                                             // 저장된 파일의 경로 반환
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save file to directory", e);
+        }
+    }
+
+    // S3 파일 업로드 로직 (임시 주석 처리)
+    /*
     private String uploadFileToS3(MultipartFile file) {
-        String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename(); // 고유한 파일 이름 생성
+        String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();          // 고유한 파일 이름 생성
         File tempFile = convertMultipartFileToFile(file);
 
         try {
@@ -93,15 +110,16 @@ public class UserService {
                     .key(fileName)
                     .build();
 
-            s3Client.putObject(putObjectRequest, tempFile.toPath()); // S3에 파일 업로드
+            s3Client.putObject(putObjectRequest, tempFile.toPath());                                // S3에 파일 업로드
 
-            return "https://" + bucketName + ".s3.amazonaws.com/" + fileName; // 업로드된 파일의 경로 반환
+            return "https://" + bucketName + ".s3.amazonaws.com/" + fileName;                       // 업로드된 파일의 경로 반환
         } catch (S3Exception e) {
             throw new RuntimeException("Failed to upload file to S3", e);
         } finally {
-            tempFile.delete(); // 임시 파일 삭제
+            tempFile.delete();                                                                      // 임시 파일 삭제
         }
     }
+    */
 
     // MultipartFile을 File로 변환하는 메서드
     private File convertMultipartFileToFile(MultipartFile file) {
