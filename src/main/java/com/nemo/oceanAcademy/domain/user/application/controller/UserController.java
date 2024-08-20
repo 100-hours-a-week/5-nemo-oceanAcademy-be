@@ -25,15 +25,15 @@ public class UserController {
     @GetMapping
     public ResponseEntity<UserResponseDTO> getUserInfo(@RequestParam String userId) {
         UserResponseDTO userDTO = userService.getUserInfoById(userId);
-        return ResponseEntity.ok(userDTO);
+        return ResponseEntity.ok(userDTO); // 사용자 정보를 HTTP 200 응답으로 반환
     }
 
     // 사용자 생성
-  /*  @PostMapping
+    @PostMapping
     public ResponseEntity<String> createUser(@RequestBody @Valid UserCreateDTO userCreateDTO) {
         userService.createUser(userCreateDTO);
         return ResponseEntity.ok("사용자가 생성되었습니다.");
-    }*/
+    }
 
     // 사용자 프로필 업데이트
     @PatchMapping

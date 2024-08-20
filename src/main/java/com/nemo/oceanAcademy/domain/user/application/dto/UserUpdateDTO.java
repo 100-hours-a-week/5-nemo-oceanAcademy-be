@@ -11,8 +11,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UserUpdateDTO {
 
-    private String id;
-
     private String nickname;            // 선택적 필드
     private String email;               // 선택적 필드
     private String profileImagePath;    // 선택적 필드

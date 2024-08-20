@@ -12,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,14 +37,14 @@ public class UserService {
     // 사용자 정보 조회
     public UserResponseDTO getUserInfoById(String userId) {
         Optional<User> user = userRepository.findById(userId);
-        return user.map(value -> new UserResponseDTO(value.getNickname(), value.getProfileImagePath()))
-                .orElse(null);
+        return user.map(value -> new UserResponseDTO(value.getNickname(), value.getEmail(), value.getProfileImagePath()))
+                .orElse(null); // 사용자가 없으면 null 반환
     }
 
     // 사용자 생성
     public void createUser(UserCreateDTO userCreateDTO) {
         User user = User.builder()
-                .id(UUID.randomUUID().toString())
+                .id(UUID.randomUUID().toString()) // 고유 UUID 생성
                 .nickname(userCreateDTO.getNickname())
                 .email(userCreateDTO.getEmail())
                 .profileImagePath(userCreateDTO.getProfileImagePath())
@@ -59,9 +58,11 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
+            // 닉네임 업데이트
             if (userUpdateDTO.getNickname() != null) {
                 user.setNickname(userUpdateDTO.getNickname());
             }
+            // 이메일 업데이트
             if (userUpdateDTO.getEmail() != null) {
                 user.setEmail(userUpdateDTO.getEmail());
             }
@@ -72,39 +73,33 @@ public class UserService {
                 user.setProfileImagePath(fileName);
             }
 
-            userRepository.save(user);
+            userRepository.save(user); // 수정된 사용자 정보 저장
         }
     }
 
     // 닉네임 중복 검사
     public boolean isNicknameAvailable(String nickname) {
-        return !userRepository.existsByNickname(nickname);
+        return !userRepository.existsByNickname(nickname); // 닉네임 중복 확인
     }
 
     // S3 파일 업로드 로직
     private String uploadFileToS3(MultipartFile file) {
-        // 고유한 파일 이름 생성
-        String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
-
-        // 파일을 임시 디렉토리에 저장
+        String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename(); // 고유한 파일 이름 생성
         File tempFile = convertMultipartFileToFile(file);
 
         try {
-            // S3에 파일 업로드 요청
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(fileName)
                     .build();
 
-            s3Client.putObject(putObjectRequest, tempFile.toPath());
+            s3Client.putObject(putObjectRequest, tempFile.toPath()); // S3에 파일 업로드
 
-            // S3에 저장된 파일 경로 반환
-            return "https://" + bucketName + ".s3.amazonaws.com/" + fileName;
+            return "https://" + bucketName + ".s3.amazonaws.com/" + fileName; // 업로드된 파일의 경로 반환
         } catch (S3Exception e) {
             throw new RuntimeException("Failed to upload file to S3", e);
         } finally {
-            // 임시 파일 삭제
-            tempFile.delete();
+            tempFile.delete(); // 임시 파일 삭제
         }
     }
 
