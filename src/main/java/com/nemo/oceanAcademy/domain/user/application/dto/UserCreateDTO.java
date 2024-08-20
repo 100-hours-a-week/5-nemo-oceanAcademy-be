@@ -17,6 +17,9 @@ public class UserCreateDTO {
     @Size(min = 2, max = 9, message = "Nickname must be between 2 and 9 characters")
     private String nickname;
 
-    private String email;               // 선택적 필드
-    private String profileImagePath;    // 선택적 필드
+    // 프로필 이미지 경로 (선택적 필드)
+    private String profileImagePath;
+
+    // 이메일 (선택적 필드)
+    private String email;
 }

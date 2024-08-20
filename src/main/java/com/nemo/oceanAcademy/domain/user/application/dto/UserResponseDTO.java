@@ -12,5 +12,6 @@ import lombok.Setter;
 public class UserResponseDTO {
 
     private String nickname;
+    private String email;
     private String profileImagePath;
 }
