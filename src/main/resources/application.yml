@@ -1,6 +1,6 @@
 spring:
     profiles:
-        active: ${PROFILE}
+        active: local
     jackson:
         property-naming-strategy: SNAKE_CASE
 
@@ -26,6 +26,8 @@ logging:
 
 file:
     upload-dir: src/main/resources/static
+
+
 
 #cloud:
 #    aws:

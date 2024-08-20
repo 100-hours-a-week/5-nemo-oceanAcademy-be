@@ -19,6 +19,7 @@ public class OAuth2AuthController {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
+    // 회원가입 여부 확인
     @GetMapping("/signup")
     public ResponseEntity<String> checkSignup(@RequestParam("user_id") String userId) {
         boolean isSignedUp = authService.isUserSignedUp(userId);
@@ -28,6 +29,7 @@ public class OAuth2AuthController {
         return ResponseEntity.noContent().build(); // 가입되지 않은 회원이면 204 No Content
     }
 
+    // 회원가입 및 토큰 발급
     @PostMapping("/signup")
     public ResponseEntity<TokenResponseDTO> signup(
             @RequestParam("user_id") String userId,
@@ -38,12 +40,14 @@ public class OAuth2AuthController {
         return ResponseEntity.status(201).body(tokenResponse);
     }
 
+    // Access Token 갱신
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponseDTO> refreshAccessToken(@RequestParam("refreshToken") String refreshToken) {
         String newAccessToken = jwtTokenProvider.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(new TokenResponseDTO(newAccessToken, refreshToken));
     }
 
+    // 회원 탈퇴
     @DeleteMapping("/signup")
     public ResponseEntity<String> withdraw(@RequestParam("user_id") String userId) {
         boolean isDeleted = authService.softDeleteUser(userId);
