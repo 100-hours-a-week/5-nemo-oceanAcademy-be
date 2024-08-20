@@ -46,3 +46,7 @@ spring:
 
 file:
     upload-dir: src/main/resources/static
+
+servlet:
+    session:
+        tracking-modes: cookie

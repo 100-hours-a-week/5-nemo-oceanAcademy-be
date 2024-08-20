@@ -29,6 +29,22 @@ public class JwtTokenProvider {
         this.userDetailsService = userDetailsService;
     }
 
+    // Authentication 객체에서 JWT 토큰 생성
+    public String createToken(Authentication authentication) {
+        String userId = authentication.getName(); // 사용자 ID
+        Claims claims = Jwts.claims().setSubject(userId); // 사용자 ID를 클레임에 포함
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + accessTokenValidity); // 토큰 만료 시간
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     // Access Token 생성
     public String createAccessToken(String userId) {
         Claims claims = Jwts.claims().setSubject(userId); // 사용자 ID를 클레임에 포함
