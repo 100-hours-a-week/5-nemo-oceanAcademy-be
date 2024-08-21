@@ -13,6 +13,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UserCreateDTO {
 
+    private String userId;
+
     @NotNull(message = "Nickname is mandatory")
     @Size(min = 2, max = 9, message = "Nickname must be between 2 and 9 characters")
     private String nickname;
