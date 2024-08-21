@@ -5,17 +5,16 @@ import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserCreateDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserResponseDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
+import com.nemo.oceanAcademy.auth.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,40 +22,44 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    // S3 관련 설정 (임시 주석 처리)
-    // private final S3Client s3Client;
-
-    // 파일 저장 경로를 application.yml에서 불러옴
     @Value("${file.upload-dir}")
     private String uploadDir;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider) {
         this.userRepository = userRepository;
-        // this.s3Client = s3Client;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    // 사용자 정보 조회
-    public UserResponseDTO getUserInfoById(String userId) {
+    // JWT에서 추출한 UUID를 기반으로 사용자 정보 조회
+    public UserResponseDTO getUserInfo(String token) {
+        String userId = jwtTokenProvider.getUserIdFromToken(token); // JWT에서 사용자 ID 추출
         Optional<User> user = userRepository.findById(userId);
         return user.map(value -> new UserResponseDTO(value.getNickname(), value.getEmail(), value.getProfileImagePath()))
                 .orElse(null); // 사용자가 없으면 null 반환
     }
 
-    // 사용자 생성
+    // 카카오 UUID 기반으로 사용자 생성
     public void createUser(UserCreateDTO userCreateDTO) {
+        if (userRepository.existsById(userCreateDTO.getUserId())) {
+            throw new RuntimeException("User already exists with ID: " + userCreateDTO.getUserId());
+        }
+
         User user = User.builder()
-                .id(UUID.randomUUID().toString()) // 고유 UUID 생성
+                .id(userCreateDTO.getUserId()) // 카카오 UUID 사용
                 .nickname(userCreateDTO.getNickname())
                 .email(userCreateDTO.getEmail())
                 .profileImagePath(userCreateDTO.getProfileImagePath())
                 .build();
+
         userRepository.save(user);
     }
 
-    // 사용자 정보 업데이트 (프로필 이미지와 닉네임)
-    public void updateUserProfile(String userId, UserUpdateDTO userUpdateDTO, MultipartFile file) {
+    // 사용자 정보 업데이트 (닉네임, 이메일, 프로필 이미지)
+    public void updateUserProfile(String token, UserUpdateDTO userUpdateDTO, MultipartFile file) {
+        String userId = jwtTokenProvider.getUserIdFromToken(token); // JWT에서 사용자 ID 추출
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
@@ -65,6 +68,7 @@ public class UserService {
             if (userUpdateDTO.getNickname() != null) {
                 user.setNickname(userUpdateDTO.getNickname());
             }
+
             // 이메일 업데이트
             if (userUpdateDTO.getEmail() != null) {
                 user.setEmail(userUpdateDTO.getEmail());
@@ -77,6 +81,8 @@ public class UserService {
             }
 
             userRepository.save(user); // 수정된 사용자 정보 저장
+        } else {
+            throw new RuntimeException("User not found with ID: " + userId);
         }
     }
 
@@ -88,47 +94,14 @@ public class UserService {
     // 로컬 디렉토리에 파일 저장 로직
     private String saveFileToDirectory(MultipartFile file) {
         try {
-            String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();      // 고유한 파일 이름 생성
-            Path filePath = Paths.get(uploadDir + File.separator + fileName);                  // images 폴더에 저장
-            Files.createDirectories(filePath.getParent());                                          // 저장 경로가 없으면 생성
-            Files.write(filePath, file.getBytes());                                                 // 파일 저장
-            return filePath.toString();                                                             // 저장된 파일의 경로 반환
+            // 고유한 파일 이름 생성 (UUID + 원래 파일명)
+            String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
+            Path filePath = Paths.get(uploadDir + "/" + fileName);
+            Files.createDirectories(filePath.getParent()); // 저장 경로가 없으면 생성
+            Files.write(filePath, file.getBytes()); // 파일 저장
+            return filePath.toString(); // 저장된 파일 경로 반환
         } catch (IOException e) {
             throw new RuntimeException("Failed to save file to directory", e);
         }
-    }
-
-    // S3 파일 업로드 로직 (임시 주석 처리)
-    /*
-    private String uploadFileToS3(MultipartFile file) {
-        String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();          // 고유한 파일 이름 생성
-        File tempFile = convertMultipartFileToFile(file);
-
-        try {
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(fileName)
-                    .build();
-
-            s3Client.putObject(putObjectRequest, tempFile.toPath());                                // S3에 파일 업로드
-
-            return "https://" + bucketName + ".s3.amazonaws.com/" + fileName;                       // 업로드된 파일의 경로 반환
-        } catch (S3Exception e) {
-            throw new RuntimeException("Failed to upload file to S3", e);
-        } finally {
-            tempFile.delete();                                                                      // 임시 파일 삭제
-        }
-    }
-    */
-
-    // MultipartFile을 File로 변환하는 메서드
-    private File convertMultipartFileToFile(MultipartFile file) {
-        File convFile = new File(System.getProperty("java.io.tmpdir") + "/" + file.getOriginalFilename());
-        try (FileOutputStream fos = new FileOutputStream(convFile)) {
-            fos.write(file.getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to convert MultipartFile to File", e);
-        }
-        return convFile;
     }
 }

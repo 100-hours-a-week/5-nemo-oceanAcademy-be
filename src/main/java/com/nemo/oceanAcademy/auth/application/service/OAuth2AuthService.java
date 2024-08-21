@@ -1,84 +1,151 @@
 package com.nemo.oceanAcademy.auth.application.service;
 
-import com.nemo.oceanAcademy.auth.application.dto.TokenResponseDTO;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nemo.oceanAcademy.auth.security.JwtTokenProvider;
+import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class OAuth2AuthService {
 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final KakaoConfig kakaoConfig;
 
-    // 파일 저장 경로
-    private final String uploadDir = "src/main/resources/static";
+    @Autowired
+    public OAuth2AuthService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider, KakaoConfig kakaoConfig) {
+        this.userRepository = userRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.kakaoConfig = kakaoConfig;
+    }
+
+    // 카카오 API에서 액세스 토큰을 가져오는 메소드
+    public String getKakaoAccessToken(String code) {
+        RestTemplate restTemplate = new RestTemplate();
+        String clientId = kakaoConfig.getKakaoClientId();  // KakaoConfig에서 clientId 가져오기
+        String redirectUri = kakaoConfig.getRedirectUri();  // KakaoConfig에서 redirectUri 가져오기
+        String tokenUrl = "https://kauth.kakao.com/oauth/token?grant_type=authorization_code" +
+                "&client_id=" + clientId +
+                "&redirect_uri=" + redirectUri +
+                "&code=" + code;
+
+        ResponseEntity<String> tokenResponse = restTemplate.postForEntity(tokenUrl, null, String.class);
+        return extractAccessToken(tokenResponse.getBody());
+    }
+
+    // 리다이렉트 처리 메소드
+    public void redirectAfterLoginSuccess(HttpServletResponse response) {
+        try {
+            String successRedirectUri = "http://localhost:3000/success";  // 리다이렉트할 URI
+            response.sendRedirect(successRedirectUri);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to redirect after login", e);
+        }
+    }
+
+    // 카카오 API에서 사용자 정보를 가져오는 메소드
+    public Map<String, Object> getKakaoUserInfo(String accessToken) {
+        RestTemplate restTemplate = new RestTemplate();
+        String userInfoUrl = "https://kapi.kakao.com/v2/user/me";
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + accessToken);
+
+        ResponseEntity<JsonNode> response = restTemplate.exchange(
+                userInfoUrl, HttpMethod.GET, new HttpEntity<>(headers), JsonNode.class
+        );
+        JsonNode body = response.getBody();
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", body.path("id").asText());
+        userInfo.put("email", body.path("kakao_account").path("email").asText());
+
+        return userInfo;
+    }
 
     // 회원가입 여부 확인
-    public boolean isUserSignedUp(String userId) {
-        return userRepository.existsById(userId);
+    public ResponseEntity<?> checkSignup(String userId) {
+        System.out.println("userId :" + userId);
+        if (userRepository.existsById(userId)) {
+            return ResponseEntity.ok("{\"message\": \"이미 가입된 회원입니다.\"}");
+        } else {
+            return ResponseEntity.status(204).body("{\"message\": \"회원 기록이 없습니다\"}");
+        }
     }
 
-    // 회원가입 처리 및 JWT 토큰 발급
-    public TokenResponseDTO signupUser(String userId, String nickname, MultipartFile file) {
-        // 이미 회원가입이 되어있는지 확인
-        if (isUserSignedUp(userId)) {
-            throw new IllegalArgumentException("이미 가입된 회원입니다.");
+    // 회원가입 신청
+    public ResponseEntity<?> signup(String userId, String nickname, MultipartFile file) {
+        if (userRepository.existsById(userId)) {
+            return ResponseEntity.status(400).body("{\"message\": \"이미 가입된 회원입니다.\"}");
         }
 
-        // 새로운 사용자 생성
-        User newUser = User.builder()
-                .id(userId)
-                .nickname(nickname)
-                .profileImagePath(file != null ? saveFileToDirectory(file) : null)
-                .build();
-        userRepository.save(newUser);
+        // 파일 저장 로직 및 유저 생성
+        String profileImagePath = saveProfileImage(file);
 
-        // Access Token 및 Refresh Token 발급
-        String accessToken = jwtTokenProvider.createAccessToken(userId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+        User user = new User();
+        user.setId(userId);
+        user.setNickname(nickname);
+        user.setProfileImagePath(profileImagePath);
+        userRepository.save(user);
 
-        return TokenResponseDTO.of(accessToken, refreshToken);
+        return ResponseEntity.status(201).body("{\"message\": \"회원가입이 완료되었습니다.\"}");
     }
 
-    // 회원 탈퇴 (Soft Delete)
-    public boolean softDeleteUser(String userId) {
-        return userRepository.findById(userId).map(user -> {
-            user.setDeletedAt(LocalDateTime.now());
+    // 회원 탈퇴 처리
+    public ResponseEntity<?> withdraw(String userId) {
+        if (userRepository.existsById(userId)) {
+            User user = userRepository.findById(userId).get();
+            user.setDeletedAt(LocalDateTime.now());  // 삭제 일시 기록
             userRepository.save(user);
-            return true;
-        }).orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+            return ResponseEntity.ok("{\"message\": \"회원탈퇴가 되었습니다.\"}");
+        } else {
+            return ResponseEntity.status(400).body("{\"message\": \"회원탈퇴에 실패했습니다.\"}");
+        }
     }
 
-    // 파일 저장 로직
-    private String saveFileToDirectory(MultipartFile file) {
+    // 액세스 토큰 추출 로직
+    private String extractAccessToken(String responseBody) {
         try {
-            // 고유한 파일 이름 생성
-            String fileName = System.currentTimeMillis() + "-" + file.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir, fileName);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(responseBody);
+            return root.path("access_token").asText();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to extract access token", e);
+        }
+    }
 
-            // 디렉토리 생성 (존재하지 않으면)
+    // 프로필 이미지 저장 로직
+    private String saveProfileImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        try {
+            String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
+            Path filePath = Paths.get("uploads/" + fileName);
             Files.createDirectories(filePath.getParent());
-
-            // 파일 저장
             Files.write(filePath, file.getBytes());
-
-            // 저장된 파일 경로 반환
             return filePath.toString();
         } catch (IOException e) {
-            throw new RuntimeException("파일 저장에 실패했습니다.", e);
+            throw new RuntimeException("Failed to save profile image", e);
         }
     }
 }
