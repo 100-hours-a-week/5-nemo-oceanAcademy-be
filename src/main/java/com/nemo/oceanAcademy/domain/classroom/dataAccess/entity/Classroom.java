@@ -8,10 +8,7 @@ import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -22,6 +19,7 @@ import java.util.List;
 @Entity
 @Table(name = "classrooms")
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -91,13 +89,18 @@ public class Classroom {
     @Column(nullable = false, name = "created_at")
     private LocalDateTime createdAt;
 
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));  // 한국 표준시(KST) 기준으로 생성 시간 설정
+    }
+
     //강의실 삭제 시각 - soft delete
     @Column(nullable = true, name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"));  // 한국 표준시(KST) 기준으로 생성 시간 설정
+    @PreRemove
+    public void preRemove() {
+        this.deletedAt = LocalDateTime.now(); // 삭제 시각 설정
     }
 
     //양방향 관계 = classrooms과 연관된 테이블 3개

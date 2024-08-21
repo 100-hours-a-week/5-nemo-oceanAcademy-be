@@ -54,16 +54,21 @@ public class User {
     @NotNull(message = "Creation time must not be null")
     private LocalDateTime createdAt;
 
-    // 사용자 회원탈퇴 시각 - soft delete
-    @Column(nullable = true, name = "deleted_at")
-    private LocalDateTime deletedAt;
-
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Seoul")); // 한국 표준시(KST) 기준으로 생성 시간 설정
         if (this.id == null) {
             this.id = UUID.randomUUID().toString(); // UUID 생성
         }
+    }
+
+    // 사용자 회원탈퇴 시각 - soft delete
+    @Column(nullable = true, name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @PreRemove
+    public void preRemove() {
+        this.deletedAt = LocalDateTime.now(); // 삭제 시각 설정
     }
 
     //양방향 관계 = users과 연관된 테이블 3개
