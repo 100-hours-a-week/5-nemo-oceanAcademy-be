@@ -63,7 +63,7 @@ public class ClassroomService {
                     return classroomRepository.findEnrolledClassrooms(categoryId, pageable);
                 case "created":
                     return classroomRepository.findCreatedClassrooms(categoryId, pageable);
-                /*
+                /* 수강생 제일 많은 강의
                     case "topten":
                         return classroomRepository.findTopTenClassrooms(categoryId, pageable);
                  */
