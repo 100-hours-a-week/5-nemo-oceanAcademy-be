@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.classroom.dataAccess.entity;
-
 import com.nemo.oceanAcademy.domain.category.dataAccess.entity.Category;
 import com.nemo.oceanAcademy.domain.participant.dataAccess.entity.Participant;
 import com.nemo.oceanAcademy.domain.review.dataAccess.entity.Review;

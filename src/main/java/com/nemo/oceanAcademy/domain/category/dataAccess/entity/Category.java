@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.category.dataAccess.entity;
-
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +19,7 @@ public class Category {
     //PK 카테고리 아이디, 식별자
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
 
     //카테고리 이름
     @Column(nullable = false, length = 100)

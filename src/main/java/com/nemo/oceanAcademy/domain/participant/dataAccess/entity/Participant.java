@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.participant.dataAccess.entity;
-
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import jakarta.persistence.*;

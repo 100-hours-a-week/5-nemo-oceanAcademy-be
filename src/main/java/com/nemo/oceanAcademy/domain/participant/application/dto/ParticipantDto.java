@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.participant.application.dto;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

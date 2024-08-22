@@ -1,5 +1,6 @@
 package com.nemo.oceanAcademy.domain.classroom.application.dto;
 
+import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import lombok.*;
 
 @Getter
@@ -41,4 +42,19 @@ public class ClassroomResponseDto {
 
     // 강의실 활성화 여부 (조회 시 반환)
     private Boolean isActive;
+
+    // Classroom 엔티티를 기반으로 생성하는 생성자 추가
+    public ClassroomResponseDto(Classroom classroom) {
+        this.id = classroom.getId();  // 강의실 아이디
+        this.userId = classroom.getUser().getId();  // 강사 아이디
+        this.categoryId = classroom.getCategory().getId();  // 카테고리 아이디
+        this.name = classroom.getName();  // 강의 이름
+        this.object = classroom.getObject();  // 강의 목표
+        this.description = classroom.getDescription();  // 강의 소개
+        this.instructorInfo = classroom.getInstructorInfo();  // 강사 소개
+        this.prerequisite = classroom.getPrerequisite();  // 사전 지식 및 준비물
+        this.announcement = classroom.getAnnouncement();  // 강의 공지
+        this.bannerImagePath = classroom.getBannerImagePath();  // 배너 이미지 경로
+        this.isActive = classroom.getIsActive();  // 강의실 활성화 여부
+    }
 }
