@@ -1,4 +1,4 @@
-package com.nemo.oceanAcademy.auth.security;
+package com.nemo.oceanAcademy.domain.auth.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,7 +29,7 @@ public class JwtTokenProvider {
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(secretKey)  // SecretKey 객체를 사용
+                .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -43,7 +43,7 @@ public class JwtTokenProvider {
                 .setSubject(userId)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(secretKey)  // SecretKey 객체를 사용
+                .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -51,7 +51,7 @@ public class JwtTokenProvider {
     public String getUserId(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)  // 동일한 secretKey로 서명 검증
+                    .setSigningKey(secretKey)  // SecretKey로 서명 검증
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
@@ -59,16 +59,13 @@ public class JwtTokenProvider {
         } catch (SignatureException e) {
             System.out.println("Invalid JWT signature: " + e.getMessage());
             throw e;
+        } catch (ExpiredJwtException e) {
+            System.out.println("Expired JWT token: " + e.getMessage());
+            throw e;
         } catch (Exception e) {
             System.out.println("JWT parsing error: " + e.getMessage());
             throw e;
         }
-    }
-
-
-    // JWT에서 사용자 ID 추출 (getUserIdFromToken 이름으로 추가)
-    public String getUserIdFromToken(String token) {
-        return getUserId(token); // 기존 getUserId 메소드를 호출
     }
 
     // JWT 유효성 검증
@@ -78,6 +75,7 @@ public class JwtTokenProvider {
                     .setSigningKey(secretKey)  // SecretKey로 서명 검증
                     .build()
                     .parseClaimsJws(token);
+            System.out.println("JWT token Good");
             return true;
         } catch (ExpiredJwtException e) {
             System.out.println("JWT token is expired: " + e.getMessage());

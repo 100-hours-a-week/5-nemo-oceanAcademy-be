@@ -1,9 +1,10 @@
 package com.nemo.oceanAcademy.config;
 
-import com.nemo.oceanAcademy.auth.security.JwtAuthenticationFilter;
-import com.nemo.oceanAcademy.auth.security.JwtTokenProvider;
+import com.nemo.oceanAcademy.domain.auth.security.JwtAuthenticationFilter;
+import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,8 +30,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // 세션을 사용하지 않음
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/users/**").permitAll()  // 인증 없이 접근 가능한 엔드포인트
-                        .anyRequest().authenticated()  // 나머지 요청은 인증 필요
+                        .requestMatchers("/api/auth/**").permitAll()  // 인증 없이 접근 가능한 엔드포인트
+                        // .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
+                        // .requestMatchers(HttpMethod.GET, "/api/classes").permitAll()
+                        .requestMatchers("/api/classes/**").permitAll()
+                        // .requestMatchers(HttpMethod.POST, "/api/classes").authenticated()
+                        .anyRequest().authenticated()  // 그 외 모든 요청은 인증 필요
                 );
 
         // JWT 필터를 UsernamePasswordAuthenticationFilter 이전에 추가

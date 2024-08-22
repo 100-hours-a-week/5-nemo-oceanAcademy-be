@@ -50,6 +50,8 @@ dependencies {
 	// 테스트 의존성
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'      // Spring Boot 테스트
 	testImplementation 'org.springframework.security:spring-security-test'      // Spring Security 테스트
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.mockito:mockito-junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                // JUnit 플랫폼 런처
 
 	// JWT 관련

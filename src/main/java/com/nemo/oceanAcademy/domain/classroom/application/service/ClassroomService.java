@@ -43,7 +43,7 @@ public class ClassroomService {
                 .prerequisite(classroomCreateDto.getPrerequisite())
                 .announcement(classroomCreateDto.getAnnouncement())
                 .bannerImagePath(classroomCreateDto.getBannerImagePath())
-                .isActive(classroomCreateDto.getIsActive())
+                .isActive(false)
                 .build();
 
         classroomRepository.save(classroom);
