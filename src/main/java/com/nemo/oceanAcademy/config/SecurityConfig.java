@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // 세션을 사용하지 않음
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/users/**").permitAll()  // 인증 없이 접근 가능한 엔드포인트
+                        .requestMatchers("/api/auth/**", "/api/users/**", "/chat").permitAll()  // 인증 없이 접근 가능한 엔드포인트
                         .anyRequest().authenticated()  // 나머지 요청은 인증 필요
                 );
 
