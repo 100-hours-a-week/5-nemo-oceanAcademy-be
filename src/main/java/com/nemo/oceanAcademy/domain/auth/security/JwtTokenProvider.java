@@ -15,15 +15,16 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtTokenProvider {
 
-    // SecretKey 생성 (256비트 이상의 안전한 키)
     private final SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long validityInMilliseconds = 3600000; // 1시간
+    private final long validityInMilliseconds = 3600000; // 한시간
+
+    public SecretKey getSecretKey() { return this.secretKey; }
 
     // JWT 토큰 생성
-    public String createToken(String userId) {
+    public String createAccessToken(String userId) {
         Claims claims = Jwts.claims().setSubject(userId);
         Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMilliseconds);
+        Date validity = new Date(now.getTime() + validityInMilliseconds); // 한시간
 
         return Jwts.builder()
                 .setClaims(claims)
@@ -35,7 +36,7 @@ public class JwtTokenProvider {
 
     // 리프레시 토큰 생성
     public String createRefreshToken(String userId) {
-        long refreshValidityInMilliseconds = validityInMilliseconds * 24 * 7; // 일주일
+        long refreshValidityInMilliseconds = validityInMilliseconds * 24 * 7; // 토큰 유효 기간 일주일
         Date now = new Date();
         Date validity = new Date(now.getTime() + refreshValidityInMilliseconds);
 
@@ -47,27 +48,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // JWT에서 사용자 ID 추출
-    public String getUserId(String token) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)  // SecretKey로 서명 검증
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.getSubject();
-        } catch (SignatureException e) {
-            System.out.println("Invalid JWT signature: " + e.getMessage());
-            throw e;
-        } catch (ExpiredJwtException e) {
-            System.out.println("Expired JWT token: " + e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            System.out.println("JWT parsing error: " + e.getMessage());
-            throw e;
-        }
-    }
-
     // JWT 유효성 검증
     public boolean validateToken(String token) {
         try {
@@ -75,13 +55,10 @@ public class JwtTokenProvider {
                     .setSigningKey(secretKey)  // SecretKey로 서명 검증
                     .build()
                     .parseClaimsJws(token);
-            System.out.println("JWT token Good");
             return true;
         } catch (ExpiredJwtException e) {
-            System.out.println("JWT token is expired: " + e.getMessage());
             return false;
         } catch (Exception e) {
-            System.out.println("JWT token validation failed: " + e.getMessage());
             return false;
         }
     }
