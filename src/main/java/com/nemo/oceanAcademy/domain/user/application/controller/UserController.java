@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -20,21 +22,17 @@ public class UserController {
         this.userService = userService;
     }
 
-    // 사용자 정보 조회 (JWT 토큰에서 UUID를 추출하여 사용자 조회)
+    // 사용자 정보 조회 (HttpServletRequest에서 UUID를 추출하여 사용자 조회)
     @GetMapping
-    public ResponseEntity<UserResponseDTO> getUserInfo(@RequestHeader("Authorization") String token) {
-        // Bearer 부분 제거
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7); // 'Bearer ' 부분을 제거하고 토큰만 추출
-        }
-        UserResponseDTO userDTO = userService.getUserInfo(token);
+    public ResponseEntity<UserResponseDTO> getUserInfo(HttpServletRequest request) {
+        // HttpServletRequest에서 설정된 userId 추출
+        UserResponseDTO userDTO = userService.getUserInfo(request);
         if (userDTO != null) {
             return ResponseEntity.ok(userDTO);
         } else {
             return ResponseEntity.status(404).body(null);
         }
     }
-
 
     // 사용자 생성 (카카오 로그인 후 회원가입 시 사용)
     @PostMapping
@@ -45,10 +43,11 @@ public class UserController {
 
     // 사용자 프로필 업데이트
     @PatchMapping
-    public ResponseEntity<String> updateUserProfile(@RequestHeader("Authorization") String token,
+    public ResponseEntity<String> updateUserProfile(HttpServletRequest request,
                                                     @RequestBody UserUpdateDTO userUpdateDTO,
                                                     @RequestPart(value = "file", required = false) MultipartFile file) {
-        userService.updateUserProfile(token, userUpdateDTO, file);
+        // HttpServletRequest에서 설정된 userId 사용
+        userService.updateUserProfile(request, userUpdateDTO, file);
         return ResponseEntity.ok("회원 정보가 수정되었습니다.");
     }
 
