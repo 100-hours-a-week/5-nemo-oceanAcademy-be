@@ -1,6 +1,7 @@
 package com.nemo.oceanAcademy.domain.chat.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,10 +20,17 @@ import java.util.Date;
 public class Chat {
     @Id
     private ObjectId id;
-    private Long roomId; //방 아이디
-    private String content; //채팅 내용
-    private Long writerId; //작성자
-    private Date createdDate; // 채팅 날짜
+    @JsonProperty("roomId")
+    private Long roomId;
+
+    @JsonProperty("content")
+    private String content;
+
+    @JsonProperty("writerId")
+    private Long writerId;
+
+    @JsonProperty("createdDate")
+    private Date createdDate;
 
     public Chat(Long roomId, String content, Long writerId, Date date) {
         this.roomId = roomId;

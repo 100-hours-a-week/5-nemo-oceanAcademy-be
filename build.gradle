@@ -9,7 +9,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
+		languageVersion = JavaLanguageVersion.of(17)  // Java 17 사용
 	}
 }
 
@@ -20,39 +20,68 @@ configurations {
 }
 
 repositories {
-	mavenCentral()
+	mavenCentral()  // Maven Central Repository 사용
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	// Spring Boot 관련 의존성
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'      			// JPA & Hibernate
+	implementation 'org.springframework.boot:spring-boot-starter-security'      			// Spring Security
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' 			// OAuth2 클라이언트
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server' 	// OAuth2 리소스 서버
+	implementation 'org.springframework.boot:spring-boot-starter-web'           			// Spring Web (REST API)
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'     			// WebSocket 지원
+
+	// servlet
+	implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
+
+	// dotenv-java
+	implementation 'io.github.cdimascio:java-dotenv:5.2.2'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// 데이터베이스
+	runtimeOnly 'com.h2database:h2'                 // H2 Database (테스트용)
+	runtimeOnly 'com.mysql:mysql-connector-j'        // MySQL 연결
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'           // Lombok 사용
+	annotationProcessor 'org.projectlombok:lombok'   // Lombok 어노테이션 처리기
+
+	// 테스트 의존성
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'      // Spring Boot 테스트
+	testImplementation 'org.springframework.security:spring-security-test'      // Spring Security 테스트
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                // JUnit 플랫폼 런처
+
+	// JWT 관련
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'   // JWT API
+	implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'  // JWT 구현
+	implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5' // JWT와 Jackson 통합
+
+	// AWS SDK
+	implementation 'software.amazon.awssdk:s3:2.17.89'  // AWS S3 SDK
+	implementation 'software.amazon.awssdk:auth'
+	implementation 'software.amazon.awssdk:regions'
+
+	// 유효성 검증
+	implementation 'org.hibernate.validator:hibernate-validator:6.2.0.Final'  // Hibernate Validator
+
 	runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-	implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
-	implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
 	implementation 'org.hibernate.validator:hibernate-validator:6.2.0.Final'
 
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.webjars:webjars-locator-core'
 	implementation 'org.webjars:sockjs-client:1.0.2'
 	implementation 'org.webjars:stomp-websocket:2.3.3'
-	implementation 'org.webjars:bootstrap:3.3.7'
-	implementation 'org.webjars:jquery:3.1.1-1'
 
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform()  // JUnit 5로 테스트 실행
 }
