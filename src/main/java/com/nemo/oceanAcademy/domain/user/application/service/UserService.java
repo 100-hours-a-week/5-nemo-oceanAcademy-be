@@ -5,7 +5,7 @@ import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserCreateDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserResponseDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
-import com.nemo.oceanAcademy.auth.security.JwtTokenProvider;
+import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -35,7 +35,7 @@ public class UserService {
 
     // JWT에서 추출한 UUID를 기반으로 사용자 정보 조회
     public UserResponseDTO getUserInfo(String token) {
-        String userId = jwtTokenProvider.getUserIdFromToken(token); // JWT에서 사용자 ID 추출
+        String userId = jwtTokenProvider.getUserId(token); // JWT에서 사용자 ID 추출
         Optional<User> user = userRepository.findById(userId);
         return user.map(value -> new UserResponseDTO(value.getNickname(), value.getEmail(), value.getProfileImagePath()))
                 .orElse(null); // 사용자가 없으면 null 반환
@@ -59,7 +59,7 @@ public class UserService {
 
     // 사용자 정보 업데이트 (닉네임, 이메일, 프로필 이미지)
     public void updateUserProfile(String token, UserUpdateDTO userUpdateDTO, MultipartFile file) {
-        String userId = jwtTokenProvider.getUserIdFromToken(token); // JWT에서 사용자 ID 추출
+        String userId = jwtTokenProvider.getUserId(token); // JWT에서 사용자 ID 추출
         Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isPresent()) {
             User user = userOptional.get();

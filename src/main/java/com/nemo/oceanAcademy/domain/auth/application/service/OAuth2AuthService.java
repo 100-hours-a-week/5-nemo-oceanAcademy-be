@@ -1,8 +1,8 @@
-package com.nemo.oceanAcademy.auth.application.service;
+package com.nemo.oceanAcademy.domain.auth.application.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nemo.oceanAcademy.auth.security.JwtTokenProvider;
+import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;

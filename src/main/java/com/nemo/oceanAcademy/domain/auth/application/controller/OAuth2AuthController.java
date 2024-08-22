@@ -1,7 +1,7 @@
-package com.nemo.oceanAcademy.auth.application.controller;
+package com.nemo.oceanAcademy.domain.auth.application.controller;
 
-import com.nemo.oceanAcademy.auth.application.service.OAuth2AuthService;
-import com.nemo.oceanAcademy.auth.security.JwtTokenProvider;
+import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
+import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,9 +27,11 @@ public class OAuth2AuthController {
 
     // 카카오 앱 키 제공
     @GetMapping("/kakao/app-key")
-    public ResponseEntity<?> getKakaoAppKey() {
+    public ResponseEntity<Map<String, String>> getKakaoAppKey() {
         // KakaoConfig에서 clientId를 가져와서 응답
-        return ResponseEntity.ok("{\"appKey\": \"" + kakaoConfig.getKakaoClientId() + "\"}");
+        Map<String, String> response = new HashMap<>();
+        response.put("appKey", kakaoConfig.getKakaoClientId());
+        return ResponseEntity.ok(response); // JSON 응답으로 수정
     }
 
     // 카카오 인증 코드 처리 후 JWT 발급
@@ -39,25 +41,24 @@ public class OAuth2AuthController {
         Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
 
         String userId = (String) kakaoUserInfo.get("id");
-        String accessToken = jwtTokenProvider.createToken(userId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
-        System.out.println("accessToken :"+ accessToken);
-        System.out.println("refreshToken :"+ refreshToken);
+        String accessToken = jwtTokenProvider.createToken(userId); // JWT 액세스 토큰 생성
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId); // JWT 리프레시 토큰 생성
 
         Map<String, String> tokens = new HashMap<>();
         tokens.put("accessToken", accessToken);
         tokens.put("refreshToken", refreshToken);
 
-        return ResponseEntity.ok(tokens);
+        return ResponseEntity.ok(tokens); // JSON 응답으로 토큰 반환
     }
 
     // 회원가입 여부 확인
     @GetMapping("/signup")
     public ResponseEntity<?> checkSignup(@RequestHeader("Authorization") String token) {
-        // Bearer 토큰에서 앞의 'Bearer ' 부분을 제거하고 JWT 토큰만 추출
-        String userId = jwtTokenProvider.getUserIdFromToken(token.replace("Bearer ", ""));
+        // Bearer 토큰에서 'Bearer ' 부분을 제거하고 JWT 토큰만 추출
+        String bearerToken = extractToken(token);
+        String userId = jwtTokenProvider.getUserId(bearerToken);
 
-        // 회원가입 여부를 확인하는 메소드를 호출하여 ResponseEntity 반환
+        // 회원가입 여부 확인 후 결과 반환
         return authService.checkSignup(userId);
     }
 
@@ -67,8 +68,18 @@ public class OAuth2AuthController {
                                     @RequestParam("nickname") String nickname,
                                     @RequestPart(value = "file", required = false) MultipartFile file) {
         // 'Bearer ' 부분을 제거하고 실제 JWT 토큰을 추출
-        String actualToken = token.replace("Bearer ", "").trim();
-        String userId = jwtTokenProvider.getUserIdFromToken(actualToken); // 토큰에서 userId 추출
+        String bearerToken = extractToken(token);
+        String userId = jwtTokenProvider.getUserId(bearerToken);
+
+        // 회원가입 처리 후 결과 반환
         return authService.signup(userId, nickname, file);
+    }
+
+    // Bearer 토큰에서 "Bearer " 부분 제거하는 메서드
+    private String extractToken(String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring(7).trim(); // "Bearer " 제거 후 반환
+        }
+        return null;
     }
 }
