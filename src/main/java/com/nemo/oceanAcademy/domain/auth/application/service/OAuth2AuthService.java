@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.auth.application.service;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
@@ -110,10 +109,10 @@ public class OAuth2AuthService {
 
     // 회원 탈퇴 처리 - soft delete
     public ResponseEntity<?> withdraw(String userId) {
+        // userId로 삭제할 사용자 검색
         if (userRepository.existsById(userId)) {
-            // userId로 사용자 검색
-            User user = userRepository.findById(userId).get();
-
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
             // deleted_at 컬럼에 삭제 일시 기록
             user.setDeletedAt(LocalDateTime.now());
             userRepository.save(user);

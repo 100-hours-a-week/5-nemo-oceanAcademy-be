@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.auth.application.controller;
-
 import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
@@ -10,6 +9,18 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
+/*
+    /api/auth/kakao/app-key
+        Get - 클라이언트에게 카카오 앱 키 발급
+
+    /api/auth/kakao/callback
+        Get - 카카오 인증 코드 처리 후 JWT 발급
+
+    /api/auth/signup
+        Get - 회원가입 여부 확인
+        Post - 회원가입 신청
+        Patch - 회원탈퇴 신청
+*/
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,7 +36,7 @@ public class OAuth2AuthController {
         this.kakaoConfig = kakaoConfig;
     }
 
-    // 클라이언트에게 카카오 앱 키 제공 (Rest Api App key)
+    // 클라이언트에게 카카오 앱 키 발급 (Rest Api App key)
     @GetMapping("/kakao/app-key")
     public ResponseEntity<Map<String, String>> getKakaoAppKey() {
         Map<String, String> response = new HashMap<>();

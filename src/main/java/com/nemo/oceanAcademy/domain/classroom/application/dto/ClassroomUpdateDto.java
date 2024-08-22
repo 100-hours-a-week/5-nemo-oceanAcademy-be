@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.classroom.application.dto;
-
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
