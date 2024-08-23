@@ -51,7 +51,7 @@ public class ClassroomService {
     }
 
     // 강의 필터링 및 페이징 처리
-    public List<ClassroomResponseDto> getFilteredClassrooms(String target, Long categoryId, int page, int pageSize) {
+    public List<ClassroomResponseDto> getFilteredClassrooms(String target, Integer categoryId, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
 
         // target에 따른 필터링
@@ -63,7 +63,7 @@ public class ClassroomService {
                     return classroomRepository.findEnrolledClassrooms(categoryId, pageable);
                 case "created":
                     return classroomRepository.findCreatedClassrooms(categoryId, pageable);
-                /* 수강생 제일 많은 강의
+                /* 수강생 제일 많은 강의 Top10
                     case "topten":
                         return classroomRepository.findTopTenClassrooms(categoryId, pageable);
                  */

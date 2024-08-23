@@ -90,7 +90,7 @@ public class OAuth2AuthController {
         return authService.signup(userId, nickname, file); // 회원가입 진행, 요청 결과 반환
     }
 
-    // 회원탈퇴 신청 - soft delete
+    // TODO : 회원탈퇴 신청 - soft delete
     @PatchMapping("/signup")
     public ResponseEntity<?> withdraw(HttpServletRequest request) {
 

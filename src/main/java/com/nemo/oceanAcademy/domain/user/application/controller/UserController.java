@@ -21,13 +21,12 @@ import jakarta.servlet.http.HttpServletRequest;
 public class UserController {
 
     private final UserService userService;
-
     @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    // 사용자 정보 조회
+    // TODO : 사용자 정보 조회
     @GetMapping
     public ResponseEntity<UserResponseDTO> getUserInfo(HttpServletRequest request) {
         // 인증: 사용자 ID - From JwtAuthenticationFilter
@@ -39,7 +38,7 @@ public class UserController {
         }
     }
 
-    // 사용자 정보 업데이트
+    // TODO : 사용자 정보 업데이트
     @PatchMapping
     public ResponseEntity<String> updateUserProfile(HttpServletRequest request,
                                                     @RequestBody UserUpdateDTO userUpdateDTO,
@@ -49,7 +48,7 @@ public class UserController {
         return ResponseEntity.ok("회원 정보가 수정되었습니다.");
     }
 
-    // 닉네임 중복 확인
+    // TODO : 닉네임 중복 확인
     @GetMapping("/checkNickname")
     public ResponseEntity<String> checkNickname(@RequestParam("nickname") String nickname) {
         boolean isAvailable = userService.isNicknameAvailable(nickname);
