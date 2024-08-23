@@ -1,13 +1,18 @@
 package com.nemo.oceanAcademy.domain.auth.security;
+import com.nemo.oceanAcademy.domain.user.application.controller.UserController;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
@@ -36,9 +41,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             System.out.println("User ID from token: " + userId);
         }
 
-        // 필터 체인 통과
+        // 필터 체인 이어나가기
         filterChain.doFilter(request, response);
+        System.out.println(response);
+
+        // 필터가 정상적으로 통과된 후
+        System.out.println("필터 통과 후 요청 처리 완료: " + request.getRequestURI());
+        System.out.println("응답 상태 코드: " + response.getStatus());
     }
+
 
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");

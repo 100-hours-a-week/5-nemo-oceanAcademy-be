@@ -39,7 +39,7 @@ public class ClassroomController {
 
     private final ClassroomService classroomService;
 
-    // TODO : 전체 강의실 조회 - 인증 불필요
+    // TODO : 전체 강의실 조회 - 성공
     @GetMapping
     public ResponseEntity<List<ClassroomResponseDto>> getAllClassrooms(
             @RequestParam(value = "target", required = false) String target,
@@ -57,7 +57,7 @@ public class ClassroomController {
     }
 
 
-    // 새로운 강의실 생성
+    // TODO : 새로운 강의실 생성
     // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
     @PostMapping
     public ResponseEntity<ClassroomResponseDto> createClassroom(HttpServletRequest request, @RequestBody ClassroomCreateDto classroomCreateDto) {
@@ -77,7 +77,7 @@ public class ClassroomController {
         return ResponseEntity.status(201).body(createdClassroom);  // 201 Created
     }
 
-    // TODO : 해당 강의실의 "강사/수강생/관계없음" 구분
+    // TODO : 해당 강의실의 "강사/수강생/관계없음" 구분 - 성공 , 수강생만 확인
     @GetMapping("/{classId}/role")
     public ResponseEntity<String> getUserRoleInClassroom(HttpServletRequest request, @PathVariable Long classId) {
         String userId = (String) request.getAttribute("userId");
@@ -90,7 +90,7 @@ public class ClassroomController {
     }
 
 
-    // TODO : 개별 강의실 조회
+    // TODO : 개별 강의실 조회 - 성공
     // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
     @GetMapping("/{classId}")
     public ResponseEntity<ClassroomResponseDto> getClassroomById(@PathVariable Long classId) {
@@ -127,7 +127,7 @@ public class ClassroomController {
     }
 
 
-    // TODO : 강의 대시보드 정보와 스케줄 정보를 불러오는 API
+    // TODO : 강의 대시보드 정보와 스케줄 정보 불라오기 - 성공
     // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
     @GetMapping("/{classId}/dashboard")
     public ResponseEntity<ClassroomDashboardDto> getClassroomDashboard(@PathVariable Long classId, HttpServletRequest request) {
@@ -144,7 +144,7 @@ public class ClassroomController {
         return ResponseEntity.ok(dashboard);
     }
 
-    // TODO : 강의를 듣는 수강생 리스트 정보 조회
+    // TODO : 강의를 듣는 수강생 리스트 정보 조회 - 성공
     @GetMapping("/{classId}/dashboard/students")
     public ResponseEntity<List<User>> getClassroomStudents(@PathVariable Long classId) {
         List<User> students = classroomService.getClassroomStudents(classId);

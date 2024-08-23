@@ -25,7 +25,7 @@ public class ScheduleController {
 
     private final ScheduleService scheduleService;
 
-    // TODO : 강의 일정 불러오기
+    // TODO : 강의 일정 불러오기 - 성공
     @GetMapping
     public ResponseEntity<List<ScheduleDto>> getSchedulesByClassId(@PathVariable Long classId, HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");  // JWT에서 추출한 사용자 ID 가져오기

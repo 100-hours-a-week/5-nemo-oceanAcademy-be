@@ -154,6 +154,10 @@ public class ClassroomService {
 
     // 강의실 조회
     public ClassroomResponseDto getClassroomById(Long classId) {
+
+        // IDEA: 삭제된 강의 조회할 때 예외 처리 필요
+        System.out.println("classId: " + classId);
+
         // 개별 강의 조회
         Classroom classroom = classroomRepository.findById(classId)
                 .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
