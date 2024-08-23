@@ -20,7 +20,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    // TODO : 전체 카테고리 리스트 조회
+    // TODO : 전체 카테고리 리스트 조회 - 성공
     @GetMapping
     public ResponseEntity<List<CategoryDto>> getAllCategories() {
         List<CategoryDto> categories = categoryService.getAllCategories();

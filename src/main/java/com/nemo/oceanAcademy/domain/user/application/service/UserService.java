@@ -32,11 +32,16 @@ public class UserService {
     }
 
     // 사용자 정보 조회
-    public UserResponseDTO getUserInfo(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId"); // HttpServletRequest에서 userId 추출
+    public UserResponseDTO getUserInfo(String userId) {
+        // DB에서 사용자 조회
         Optional<User> user = userRepository.findById(userId);
-        return user.map(value -> new UserResponseDTO(value.getNickname(), value.getEmail(), value.getProfileImagePath()))
-                .orElse(null); // 사용자가 없으면 null 반환
+
+        // 사용자 정보가 있을 경우 DTO로 변환하여 반환, 없으면 null 반환
+        return user.map(value -> new UserResponseDTO(
+                value.getNickname(),
+                value.getEmail(),
+                value.getProfileImagePath())
+        ).orElse(null);
     }
 
     // 카카오 UUID 기반으로 사용자 생성
