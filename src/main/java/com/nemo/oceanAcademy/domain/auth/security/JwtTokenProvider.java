@@ -3,19 +3,26 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
-
-import io.jsonwebtoken.security.Keys;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
 
 @Component
 public class JwtTokenProvider {
-    private final SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long validityInMilliseconds = 3600000; // 한시간
 
-    public SecretKey getSecretKey() { return this.secretKey; }
+    private final SecretKey secretKey;
+    public JwtTokenProvider(@Value("${secret.key}") String secretKeyString) {
+        // 주입된 문자열을 Base64로 디코딩하여 SecretKey 생성
+        byte[] decodedKey = Base64.getDecoder().decode(secretKeyString);
+        this.secretKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "HmacSHA256");
+    }
+    public SecretKey getSecretKey() { return secretKey; }
+
+    private final long validityInMilliseconds = 3600000; // 한시간
 
     // JWT 토큰 생성
     public String createAccessToken(String userId) {

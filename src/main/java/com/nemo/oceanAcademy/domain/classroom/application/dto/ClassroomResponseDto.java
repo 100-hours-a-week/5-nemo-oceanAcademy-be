@@ -17,7 +17,7 @@ public class ClassroomResponseDto {
     private String userId;
 
     // FK 카테고리 아이디 (조회 시 반환)
-    private int categoryId;
+    private Integer categoryId;
 
     // 강의 이름 (조회 시 반환)
     private String name;

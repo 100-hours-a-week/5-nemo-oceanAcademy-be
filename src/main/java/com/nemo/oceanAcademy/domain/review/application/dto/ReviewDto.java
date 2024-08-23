@@ -18,7 +18,7 @@ public class ReviewDto {
     //FK 강의실 아이디
     private Long classroomId;
     //FK 사용자(수강자) 아이디
-    private Long userId;
+    private String userId;
     //강의 별점
     private Float rating;
     //리뷰 내용

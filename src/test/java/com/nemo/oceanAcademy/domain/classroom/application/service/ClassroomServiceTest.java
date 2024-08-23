@@ -44,7 +44,7 @@ class ClassroomServiceTest {
         // Given
         ClassroomCreateDto classroomCreateDto = new ClassroomCreateDto();
         classroomCreateDto.setName("New Class");
-        classroomCreateDto.setCategoryId(100);  // Long 타입으로 수정
+        classroomCreateDto.setCategoryId(100);
         classroomCreateDto.setUserId("100");
 
         // Mock 객체 준비
