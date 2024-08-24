@@ -1,4 +1,5 @@
-secret.txt
+src/main/resources/secret.txt
+
 *.env
 *#
 *.iml
