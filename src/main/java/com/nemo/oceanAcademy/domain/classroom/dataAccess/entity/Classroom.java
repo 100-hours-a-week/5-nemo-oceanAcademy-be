@@ -82,7 +82,7 @@ public class Classroom {
 
     //강의실 라이브 강의 활성화 여부
     @Column(nullable = false, name = "is_active")
-    private Boolean isActive;
+    private Boolean isActive = false;
 
     //강의실 생성 시각
     @Column(nullable = false, name = "created_at")

@@ -29,7 +29,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    // TODO : 사용자 정보 조회 - 실패
+    // TODO : 사용자 정보 조회 - 성공
     @GetMapping
     public ResponseEntity<UserResponseDTO> getUserInfo(HttpServletRequest request) {
         System.out.println("오아아");

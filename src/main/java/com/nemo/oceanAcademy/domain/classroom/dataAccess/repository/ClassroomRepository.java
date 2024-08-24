@@ -21,13 +21,18 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     @Query("SELECT new com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto(c) " +
             "FROM Classroom c JOIN c.participants p WHERE p.user.id = :userId " +
             "AND (:categoryId IS NULL OR c.category.id = :categoryId)")
-    List<ClassroomResponseDto> findEnrolledClassrooms(@Param("categoryId") Integer categoryId, Pageable pageable);
+    List<ClassroomResponseDto> findEnrolledClassrooms(@Param("categoryId") Integer categoryId, @Param("userId") String userId, Pageable pageable);
+
+    // 카테고리 필터링만 적용
+    @Query("SELECT new com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto(c) " +
+            "FROM Classroom c WHERE c.category.id = :categoryId")
+    List<ClassroomResponseDto> findClassroomsByCategoryId(@Param("categoryId") Integer categoryId, Pageable pageable);
 
     // 내가 개설한 강의 조회
     @Query("SELECT new com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto(c) " +
             "FROM Classroom c WHERE c.user.id = :userId " +
             "AND (:categoryId IS NULL OR c.category.id = :categoryId)")
-    List<ClassroomResponseDto> findCreatedClassrooms(@Param("categoryId") Integer categoryId, Pageable pageable);
+    List<ClassroomResponseDto> findCreatedClassrooms(@Param("categoryId") Integer categoryId, @Param("userId") String userId, Pageable pageable);
 
     // 상위 10개 강의 조회
     /* 현재는 rating 없음

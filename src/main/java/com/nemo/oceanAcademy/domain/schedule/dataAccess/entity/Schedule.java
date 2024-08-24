@@ -47,6 +47,6 @@ public class Schedule {
 
     // 강의 종료 시각, 수동 설정
     @Column(nullable = false, name = "end_time")
-    @NotNull(message = "Finish time must not be null")
-    private LocalTime finishTime;
+    @NotNull(message = "end time must not be null")
+    private LocalTime endTime;
 }

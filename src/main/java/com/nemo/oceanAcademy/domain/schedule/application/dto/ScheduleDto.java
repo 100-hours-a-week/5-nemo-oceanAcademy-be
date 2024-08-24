@@ -18,5 +18,5 @@ public class ScheduleDto {
     private String content;        // 강의 일정 내용
     private LocalDate date;        // 강의 일정 날짜
     private LocalTime startTime;   // 강의 시작 시각
-    private LocalTime finishTime;  // 강의 종료 시각
+    private LocalTime endTime;  // 강의 종료 시각
 }

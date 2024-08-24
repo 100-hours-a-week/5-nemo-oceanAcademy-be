@@ -53,7 +53,7 @@ public class ScheduleService {
                 .content(schedule.getContent())
                 .date(schedule.getDate())
                 .startTime(schedule.getStartTime())
-                .finishTime(schedule.getFinishTime())
+                .endTime(schedule.getEndTime())
                 .build();
     }
 
@@ -63,7 +63,7 @@ public class ScheduleService {
                 .content(scheduleDto.getContent())
                 .date(scheduleDto.getDate())
                 .startTime(scheduleDto.getStartTime())
-                .finishTime(scheduleDto.getFinishTime())
+                .endTime(scheduleDto.getEndTime())
                 .build();
     }
 }
