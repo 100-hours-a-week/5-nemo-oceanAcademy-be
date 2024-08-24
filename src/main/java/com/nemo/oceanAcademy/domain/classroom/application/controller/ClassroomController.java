@@ -32,8 +32,12 @@ import java.util.List;
     /api/classes/{classId}/dashboard
         Get - 강의 대시보드 정보 불러오기
 
-    /{classId}/dashboard/students
+    /api/classes/{classId}/dashboard/students
         Get - 강의를 듣는 수강생 리스트 정보 불러오기
+
+    /api/classes/{classId}/enroll
+        Post - 강의 수강신청
+
 */
 @RestController
 @RequestMapping("/api/classes")
@@ -125,7 +129,7 @@ public class ClassroomController {
 
     // TODO : 강의실 삭제 - soft delete - 강사만 가능 - 성공
     // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
-    @PatchMapping("/{classId}/delete")
+    @DeleteMapping("/{classId}/delete")
     public ResponseEntity<Void> deleteClassroom(HttpServletRequest request, @PathVariable Long classId) {
         // 인증: 사용자 ID - From JwtAuthenticationFilter
         String userId = (String) request.getAttribute("userId");

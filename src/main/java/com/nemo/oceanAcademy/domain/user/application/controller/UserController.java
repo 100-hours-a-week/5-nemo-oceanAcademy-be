@@ -3,6 +3,7 @@ import com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserResponseDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
 import com.nemo.oceanAcademy.domain.user.application.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +22,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
 
     // TODO : 사용자 정보 조회 - 성공
     @GetMapping
