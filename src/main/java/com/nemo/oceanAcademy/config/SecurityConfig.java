@@ -53,6 +53,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/classes/{classId}/dashboard/students").authenticated()   // 강의를 듣는 수강생 리스트 정보 불러오기, 강사만 가능
 
                 // Classes
+                .requestMatchers(HttpMethod.PATCH, "/api/classes/{classId}/enroll").authenticated()     // 수강신청
                 .requestMatchers(HttpMethod.PATCH, "/api/classes/{classId}").authenticated()            // 강의실 정보 업데이트, 강사만 가능
                 .requestMatchers(HttpMethod.PATCH, "/api/classes/{classId}/delete").authenticated()     // 강의실 삭제, 강사만 가능
                 .requestMatchers(HttpMethod.POST, "/api/classes").authenticated()                       // 새로운 강의실 생성
