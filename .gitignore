@@ -1,4 +1,6 @@
-application.properties
+src/main/resources/application-secret.yml
+src/main/resources/secret.txt
+*.env
 *#
 *.iml
 *.ipr
@@ -43,3 +45,4 @@ secrets.yml
 .git-hooks/
 node_modules
 .idea
+build
