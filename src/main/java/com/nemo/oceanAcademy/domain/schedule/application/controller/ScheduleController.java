@@ -34,7 +34,7 @@ public class ScheduleController {
         return ResponseEntity.ok(schedules);
     }
 
-    // TODO : 강의 일정 생성하기
+    // TODO : 강의 일정 생성하기 - 성공
     @PostMapping
     public ResponseEntity<ScheduleDto> createSchedule(@PathVariable Long classId, @RequestBody ScheduleDto scheduleDto, HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");  // JWT에서 추출한 사용자 ID 가져오기
@@ -43,7 +43,7 @@ public class ScheduleController {
         return ResponseEntity.ok(createdSchedule);
     }
 
-    // TODO : 강의 일정 삭제하기
+    // TODO : 강의 일정 삭제하기 - 성공
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSchedule(@PathVariable Long classId, @PathVariable Long id, HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");  // JWT에서 추출한 사용자 ID 가져오기

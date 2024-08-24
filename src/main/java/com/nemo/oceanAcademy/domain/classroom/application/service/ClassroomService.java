@@ -7,6 +7,8 @@ import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.ClassroomRepository;
 import com.nemo.oceanAcademy.domain.category.dataAccess.entity.Category;
 import com.nemo.oceanAcademy.domain.category.dataAccess.repository.CategoryRepository;
+import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantDto;
+import com.nemo.oceanAcademy.domain.participant.dataAccess.entity.Participant;
 import com.nemo.oceanAcademy.domain.participant.dataAccess.repository.ParticipantRepository;
 import com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto;
 import com.nemo.oceanAcademy.domain.schedule.dataAccess.repository.ScheduleRepository;
@@ -51,7 +53,7 @@ public class ClassroomService {
     }
 
     // 강의 필터링 및 페이징 처리
-    public List<ClassroomResponseDto> getFilteredClassrooms(String target, Integer categoryId, int page, int pageSize) {
+    public List<ClassroomResponseDto> getFilteredClassrooms(String target, Integer categoryId, String userId, int page, int pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
 
         // target에 따른 필터링
@@ -60,13 +62,13 @@ public class ClassroomService {
                 case "live":
                     return classroomRepository.findLiveClassrooms(categoryId, pageable);
                 case "enrolled":
-                    return classroomRepository.findEnrolledClassrooms(categoryId, pageable);
+                    return classroomRepository.findEnrolledClassrooms(categoryId, userId, pageable); // userId 전달
                 case "created":
-                    return classroomRepository.findCreatedClassrooms(categoryId, pageable);
-                /* 수강생 제일 많은 강의 Top10
-                    case "topten":
-                        return classroomRepository.findTopTenClassrooms(categoryId, pageable);
-                 */
+                    return classroomRepository.findCreatedClassrooms(categoryId, userId, pageable); // userId 전달
+            /* 수강생 제일 많은 강의 Top10
+                case "topten":
+                    return classroomRepository.findTopTenClassrooms(categoryId, pageable);
+             */
                 case "ALL":  // target이 "ALL"이면 전체 강의실 조회
                     return getAllClassrooms();
                 default:
@@ -74,8 +76,13 @@ public class ClassroomService {
             }
         }
 
-        // target이 없는 경우 전체 강의 조회
-        return getAllClassrooms();
+        // target이 없는 경우 카테고리만 필터링
+        if (categoryId != null) {
+            return classroomRepository.findClassroomsByCategoryId(categoryId, pageable); // 카테고리 필터링
+        }
+
+        // target도 없고 categoryId도 없는 경우 전체 강의 조회
+        return classroomRepository.findAllClassrooms(categoryId, pageable);
     }
 
     // 새로운 강의 생성
@@ -125,14 +132,18 @@ public class ClassroomService {
                 .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
 
         // 강의 정보 업데이트
-        classroom.setName(classroomUpdateDto.getName());
-        classroom.setObject(classroomUpdateDto.getObject());
-        classroom.setDescription(classroomUpdateDto.getDescription());
-        classroom.setInstructorInfo(classroomUpdateDto.getInstructorInfo());
-        classroom.setPrerequisite(classroomUpdateDto.getPrerequisite());
-        classroom.setAnnouncement(classroomUpdateDto.getAnnouncement());
-        classroom.setBannerImagePath(classroomUpdateDto.getBannerImagePath());
-        classroom.setIsActive(classroomUpdateDto.getIsActive());
+
+        // 필수 필드 검증
+        if (classroomUpdateDto.getName() != null) { classroom.setName(classroomUpdateDto.getName()); }
+        if (classroomUpdateDto.getObject() != null) { classroom.setObject(classroomUpdateDto.getObject()); }
+        if (classroomUpdateDto.getDescription() != null) { classroom.setDescription(classroomUpdateDto.getDescription()); }
+        if (classroomUpdateDto.getIsActive() != null) { classroom.setIsActive(classroomUpdateDto.getIsActive()); }
+
+        // 선택 필드 검증
+        if (classroomUpdateDto.getInstructorInfo() != null) { classroom.setInstructorInfo(classroomUpdateDto.getInstructorInfo()); }
+        if (classroomUpdateDto.getPrerequisite() != null) { classroom.setPrerequisite(classroomUpdateDto.getPrerequisite()); }
+        if (classroomUpdateDto.getAnnouncement() != null) { classroom.setAnnouncement(classroomUpdateDto.getAnnouncement()); }
+        if (classroomUpdateDto.getBannerImagePath() != null) { classroom.setBannerImagePath(classroomUpdateDto.getBannerImagePath()); }
 
         classroomRepository.save(classroom);
 
@@ -243,5 +254,26 @@ public class ClassroomService {
                 .schedules(schedules)
                 .build();
     }
+
+    public void enrollParticipant(ParticipantDto participantDto) {
+        // userId로 User 엔티티 조회
+        User user = userRepository.findById(participantDto.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + participantDto.getUserId()));
+
+        // classroomId로 Classroom 엔티티 조회
+        Classroom classroom = classroomRepository.findById(participantDto.getClassroomId())
+                .orElseThrow(() -> new IllegalArgumentException("Classroom not found with id: " + participantDto.getClassroomId()));
+
+        // Participant 엔티티로 변환
+        Participant participant = Participant.builder()
+                .user(user)                                 // 조회한 User 객체
+                .classroom(classroom)                       // 조회한 Classroom 객체
+                .createdAt(participantDto.getCreatedAt())   // 생성 시간
+                .build();
+
+        // 엔티티 저장
+        participantRepository.save(participant);
+    }
+
 
 }

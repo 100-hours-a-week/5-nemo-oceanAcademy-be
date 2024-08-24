@@ -20,7 +20,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     // 모든 강의 일정 DTO로 반환하는 쿼리
     @Query("SELECT new com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto(" +
-            "s.id, s.classroom.id, s.content, s.date, s.startTime, s.finishTime) " +
+            "s.id, s.classroom.id, s.content, s.date, s.startTime, s.endTime) " +
             "FROM Schedule s WHERE s.classroom.id = :classroomId")
     List<ScheduleDto> findSchedulesByClassroomId(@Param("classroomId") Long classroomId);
 }
