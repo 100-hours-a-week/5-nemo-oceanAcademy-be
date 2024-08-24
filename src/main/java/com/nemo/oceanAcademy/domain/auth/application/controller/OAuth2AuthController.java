@@ -2,6 +2,7 @@ package com.nemo.oceanAcademy.domain.auth.application.controller;
 import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,17 +25,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class OAuth2AuthController {
 
     private final OAuth2AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
     private final KakaoConfig kakaoConfig;
-
-    public OAuth2AuthController(OAuth2AuthService authService, JwtTokenProvider jwtTokenProvider, KakaoConfig kakaoConfig) {
-        this.authService = authService;
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.kakaoConfig = kakaoConfig;
-    }
 
     // 클라이언트에게 카카오 앱 키 발급 (Rest Api App key)
     @GetMapping("/kakao/app-key")
@@ -91,7 +87,7 @@ public class OAuth2AuthController {
     }
 
     // TODO : 회원탈퇴 신청 - soft delete - 성공 / 이슈
-    @PatchMapping("/signup")
+    @DeleteMapping("/signup")
     public ResponseEntity<?> withdraw(HttpServletRequest request) {
 
         // JwtAuthenticationFilter에 userId를 요청하여 받아옴 - JWT AccessToken에서 추출
