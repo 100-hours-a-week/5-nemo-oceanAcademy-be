@@ -1,11 +1,11 @@
 kakao:
-  client-id: ${KAKAO_CLIENT_ID}
-  client-secret: ${KAKAO_CLIENT_SECRET}
-  redirect-uri: ${KAKAO_REDIRECT_URI}
+  client-id: 142d371229f251114d5d534942f31c6a
+  client-secret: PWcMOi1uvFidFelcne3gzOCoZYOLrsXH
+  redirect-uri: http://localhost:3000/oauth/kakao/callback
 
 secret:
-  key: ${SECRET_KEY}
-  hash: ${SECRET_HASH}
+  key: wgaqozabcyesownghqujsiwrsunasgqkcakesnawjeockzskaksecncjezawokdcziraqtyc
+  hash: w,a,q,z,c,s
 
 spring:
   security:
@@ -13,9 +13,9 @@ spring:
       client:
         registration:
           kakao:
-            client-id: ${KAKAO_CLIENT_ID}
-            client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: ${KAKAO_REDIRECT_URI}
+            client-id: 142d371229f251114d5d534942f31c6a
+            client-secret: PWcMOi1uvFidFelcne3gzOCoZYOLrsXH
+            redirect-uri: http://localhost:3000/oauth/kakao/callback
             client-name: Kakao
             authorization-grant-type: authorization_code
             scope: profile_nickname, profile_image
@@ -45,15 +45,17 @@ spring:
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://oceanacademydb.cx0u8okkguoh.ap-northeast-2.rds.amazonaws.com:3306/OceanAcademyDB
+    username: root
+    password: Nemo0325!!
+
 
 logging:
   level:
     org.hibernate.SQL: debug
-    org.springframework.security: DEBUG
+    org.springframework.security: DEBUG  # Spring Security ??? ?? ???
     org.springframework.security.web.FilterChainProxy: DEBUG
+
 
 file:
   upload-dir: src/main/resources/static
