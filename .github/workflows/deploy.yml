@@ -1,10 +1,3 @@
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches:
-      - main
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,10 +29,10 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build  # build job이 성공적으로 완료되어야만 deploy job이 실행됩니다.
+    needs: build  # build job이 성공해야 deploy job이 실행됨.
 
     steps:
-      - name: SSH를 위한 디렉토리 및 키 설정
+      - name: SSH 설정
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
@@ -47,7 +40,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-      - name: 서버에 SSH 접속 및 배포
+      - name: 서버에 배포
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -58,4 +51,11 @@ jobs:
             docker stop $(docker ps -a -q) || true
             docker rm $(docker ps -a -q) || true
             docker rmi $(docker images -a -q) || true
-            docker run -d -p 5000:8080 ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
+            docker run -d -p 5000:8080 \
+              -e KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }} \
+              -e KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }} \
+              -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
+              -e DB_URL=${{ secrets.DB_URL }} \
+              -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
