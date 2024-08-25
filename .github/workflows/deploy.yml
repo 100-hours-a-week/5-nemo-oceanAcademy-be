@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - main  # main 브랜치에 푸시될 때 실행
 
 jobs:
   build:
@@ -30,13 +30,13 @@ jobs:
 
       - name: Build and Push Docker image
         run: |
-          docker build -t nemo-be .
-          docker tag nemo-be:latest ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
+          docker build -t nemo-be:${{ github.sha }} .
+          docker tag nemo-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build  # build job이 성공적으로 완료되어야만 deploy job이 실행됩니다.
+    needs: build
 
     steps:
       - name: SSH를 위한 디렉토리 및 키 설정
@@ -45,17 +45,40 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 700 ~/.ssh
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts || true
 
-      - name: 서버에 SSH 접속 및 배포
+      - name: 서버에 SSH 접속 및 `application.yml` 파일 생성
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
-            docker stop $(docker ps -a -q) || true
-            docker rm $(docker ps -a -q) || true
-            docker rmi $(docker images -a -q) || true
-            docker run -d -p 5000:8080 ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
+            mkdir -p ~/app/config/
+            echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
+
+      - name: 서버에 Docker 컨테이너 배포
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }} && \
+            docker stop $(docker ps -a -q) || true && \
+            docker rm $(docker ps -a -q) || true && \
+            docker rmi $(docker images -a -q) || true && \
+            docker run -d -p 5000:8080 --name nemo-be \
+              -v ~/app/config/application.yml:/app/application.yml \
+              -e FILE_UPLOAD_DIR=/app/static \
+              ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
+
+      - name: Docker 컨테이너 로그 출력
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Docker 컨테이너 로그 출력" && \
+            docker logs nemo-be
