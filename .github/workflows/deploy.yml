@@ -58,7 +58,9 @@ jobs:
             docker stop $(docker ps -a -q) || true && \
             docker rm $(docker ps -a -q) || true && \
             docker rmi $(docker images -a -q) || true && \
-            docker run -d -p 5000:8080 --name nemo-be ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }} || docker logs nemo-be
+            docker run -d -p 5000:8080 --name nemo-be \
+              -e FILE_UPLOAD_DIR=/app/static \
+              ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }} || docker logs nemo-be
 
       - name: Docker 컨테이너 실행 로그 확인
         if: failure()
