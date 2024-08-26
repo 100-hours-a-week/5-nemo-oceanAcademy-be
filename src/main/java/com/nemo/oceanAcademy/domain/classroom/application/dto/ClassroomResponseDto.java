@@ -1,6 +1,7 @@
 package com.nemo.oceanAcademy.domain.classroom.application.dto;
 
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
+import jakarta.persistence.JoinColumn;
 import lombok.*;
 
 @Getter
@@ -18,6 +19,14 @@ public class ClassroomResponseDto {
 
     // FK 카테고리 아이디 (조회 시 반환)
     private Integer categoryId;
+
+    // 강사 닉네임 (조회 시 반환)
+    @JoinColumn(name = "instructor_info")
+    private String instructor;
+
+    // 카테고리 이름 (조회 시 반환)
+    @JoinColumn(name = "name")
+    private String category;
 
     // 강의 이름 (조회 시 반환)
     private String name;
@@ -46,8 +55,10 @@ public class ClassroomResponseDto {
     // Classroom 엔티티를 기반으로 생성하는 생성자 추가
     public ClassroomResponseDto(Classroom classroom) {
         this.id = classroom.getId();  // 강의실 아이디
-        this.userId = classroom.getUser().getId();  // 강사 아이디
-        this.categoryId = classroom.getCategory().getId();  // 카테고리 아이디
+        this.userId = classroom.getUser().getId();  // 강사 이름
+        this.categoryId = classroom.getCategory().getId();  // 카테고리 이름
+        this.instructor = classroom.getUser().getNickname();  // 강사 이름
+        this.category = classroom.getCategory().getName();  // 카테고리 이름
         this.name = classroom.getName();  // 강의 이름
         this.object = classroom.getObject();  // 강의 목표
         this.description = classroom.getDescription();  // 강의 소개
