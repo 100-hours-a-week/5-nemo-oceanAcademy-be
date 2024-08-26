@@ -1,7 +1,8 @@
-package com.nemo.oceanAcademy.domain.chat.service;
+package com.nemo.oceanAcademy.domain.chat.application.service;
 
-import com.nemo.oceanAcademy.domain.chat.entity.Chat;
-import com.nemo.oceanAcademy.domain.chat.repository.ChatRepository;
+import com.nemo.oceanAcademy.domain.chat.dataAccess.entity.Chat;
+import com.nemo.oceanAcademy.domain.chat.dataAccess.repository.ChatRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -10,11 +11,9 @@ import reactor.core.publisher.Mono;
 import java.util.Date;
 
 @Service
+@RequiredArgsConstructor
 public class ChatService {
     private final ChatRepository chatRepository;
-    public ChatService(ChatRepository chatRepository) {
-        this.chatRepository = chatRepository;
-    }
     @Transactional
     public Flux<Chat> findChatMessages(Long id) {
         return chatRepository.findAllByRoomId(id);
