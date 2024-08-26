@@ -54,11 +54,14 @@ public class ClassroomController {
             @RequestParam(value = "category", required = false) Integer categoryId,
             @RequestParam(value = "page", defaultValue = "0") int page) {
 
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            System.out.println("userId 추출 불가, 인증되지 않은 요청");
-            return ResponseEntity.status(401).body(null);
+        String userId = null;
+
+        // "enrolled"와 "created"에 대해서만 인증을 요구
+        if ("enrolled".equals(target) || "created".equals(target)) {
+            userId = (String) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(401).body(null);
+            }
         }
 
         // 한 페이지에 10개씩 표시
@@ -70,6 +73,7 @@ public class ClassroomController {
         System.out.println("필터링된 강의실 조회 완료!");
         return ResponseEntity.ok(classrooms);
     }
+
 
     // TODO : 새로운 강의실 생성 - 성공
     // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
@@ -163,7 +167,14 @@ public class ClassroomController {
 
     // TODO : 강의를 듣는 수강생 리스트 정보 조회 - 성공
     @GetMapping("/{classId}/dashboard/students")
-    public ResponseEntity<List<User>> getClassroomStudents(@PathVariable Long classId) {
+    public ResponseEntity<List<User>> getClassroomStudents(HttpServletRequest request, @PathVariable Long classId) {
+
+        // 인증: 사용자 ID - From JwtAuthenticationFilter
+        String userId = (String) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).body(null);
+        }
+
         List<User> students = classroomService.getClassroomStudents(classId);
         return ResponseEntity.ok(students);
     }

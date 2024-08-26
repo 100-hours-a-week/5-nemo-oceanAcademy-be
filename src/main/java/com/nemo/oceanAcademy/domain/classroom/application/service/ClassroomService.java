@@ -35,11 +35,13 @@ public class ClassroomService {
 
     // 전체 강의실 조회
     public List<ClassroomResponseDto> getAllClassrooms() {
-        return classroomRepository.findAll().stream()
+        return classroomRepository.findAllWithJoins().stream()
                 .map(classroom -> ClassroomResponseDto.builder()
                         .id(classroom.getId())
                         .categoryId(classroom.getCategory().getId())
                         .userId(classroom.getUser().getId())
+                        .instructor(classroom.getUser().getNickname())  // 강사 닉네임
+                        .category(classroom.getCategory().getName())    // 카테고리 이름
                         .name(classroom.getName())
                         .object(classroom.getObject())
                         .description(classroom.getDescription())
@@ -115,6 +117,8 @@ public class ClassroomService {
                 .categoryId(classroom.getCategory().getId())
                 .userId(classroom.getUser().getId())
                 .name(classroom.getName())
+                .instructor(classroom.getUser().getNickname())  // 강사 닉네임
+                .category(classroom.getCategory().getName())    // 카테고리 이름
                 .object(classroom.getObject())
                 .description(classroom.getDescription())
                 .instructorInfo(classroom.getInstructorInfo())
@@ -152,6 +156,8 @@ public class ClassroomService {
                 .id(classroom.getId())
                 .categoryId(classroom.getCategory().getId())
                 .userId(classroom.getUser().getId())
+                .instructor(classroom.getUser().getNickname())  // 강사 닉네임
+                .category(classroom.getCategory().getName())    // 카테고리 이름
                 .name(classroom.getName())
                 .object(classroom.getObject())
                 .description(classroom.getDescription())
@@ -163,20 +169,21 @@ public class ClassroomService {
                 .build();
     }
 
-    // 강의실 조회
+    // 개별 강의실 조회
     public ClassroomResponseDto getClassroomById(Long classId) {
 
         // IDEA: 삭제된 강의 조회할 때 예외 처리 필요
         System.out.println("classId: " + classId);
 
-        // 개별 강의 조회
-        Classroom classroom = classroomRepository.findById(classId)
+        Classroom classroom = classroomRepository.findByIdWithJoins(classId)
                 .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
 
         return ClassroomResponseDto.builder()
                 .id(classroom.getId())
                 .categoryId(classroom.getCategory().getId())
                 .userId(classroom.getUser().getId())
+                .category(classroom.getCategory().getName())    // 카테고리 이름
+                .instructor(classroom.getUser().getNickname())  // 강사 닉네임
                 .name(classroom.getName())
                 .object(classroom.getObject())
                 .description(classroom.getDescription())
@@ -187,6 +194,7 @@ public class ClassroomService {
                 .isActive(classroom.getIsActive())
                 .build();
     }
+
 
     // Soft Delete 방식으로 강의실 삭제 - soft delete
     public ResponseEntity<?> deleteClassroom(Long classId) {
