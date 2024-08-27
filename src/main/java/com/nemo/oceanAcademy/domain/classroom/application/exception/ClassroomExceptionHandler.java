@@ -12,6 +12,6 @@ public class ClassroomExceptionHandler {
 
     @ExceptionHandler(ClassroomNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleClassroomNotFound(ClassroomNotFoundException ex) {
-        return ErrorResponse.error("강의실을 찾을 수 없습니다.", "Classroom not found", HttpStatus.NOT_FOUND, null);
+        return ErrorResponse.error("해당하는 ID의 강의실을 찾을 수 없습니다.", "Classroom not found", HttpStatus.NOT_FOUND, null);
     }
 }
