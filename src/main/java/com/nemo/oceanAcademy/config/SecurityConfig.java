@@ -1,4 +1,7 @@
 package com.nemo.oceanAcademy.config;
+import com.nemo.oceanAcademy.common.security.CustomAuthenticationEntryPoint;
+import com.nemo.oceanAcademy.common.security.CustomAccessDeniedHandler;
+import com.nemo.oceanAcademy.common.security.CustomAuthorizationManager;
 import com.nemo.oceanAcademy.domain.auth.security.JwtAuthenticationFilter;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomAuthorizationManager customAuthorizationManager;
 
@@ -67,6 +72,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/classes/{classId}/schedule").authenticated()        // 강의 일정 생성하기
                         .requestMatchers(HttpMethod.GET, "/api/classes/{classId}/schedule").authenticated()         // 강의 일정 불러오기
                         .anyRequest().permitAll()  // 나머지 요청은 인증 없이 허용
+
+                )
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        // 401, 403 에러에 대한 핸들러 설정
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
                 );
 
         // JWT 필터 추가

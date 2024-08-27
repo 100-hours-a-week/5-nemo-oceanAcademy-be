@@ -1,4 +1,4 @@
-package com.nemo.oceanAcademy.config;
+package com.nemo.oceanAcademy.common.security;
 
 import com.nemo.oceanAcademy.domain.classroom.application.controller.TargetAccessChecker;
 import org.springframework.security.authorization.AuthorizationDecision;
