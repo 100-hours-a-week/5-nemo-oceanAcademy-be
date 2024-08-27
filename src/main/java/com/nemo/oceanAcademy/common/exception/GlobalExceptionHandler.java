@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage());
         }
         Map<String, Object> errorResponse = createErrorResponse(
-                "입력 값이 유효하지 않습니다.",
+                "입력 값이 유효하지 않습니다. 요청 필드 타입을 확인해주세요.",
                 "Invalid input data.",
                 HttpStatus.BAD_REQUEST,
                 "Bad Request",
@@ -55,12 +55,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    // 요청 데이터가 누락된 경우
+    // 요청 데이터가 누락된 경우 - 거의 다 ResourceNotFoundException (custom) 으로 처리, 한국어, 영어 응답 제공
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
         Map<String, Object> errorResponse = createErrorResponse(
                 ex.getMessage(),
-                ex.getMessage(), // 영어와 한국어가 같은 경우
+                ex.getMessage(),
                 HttpStatus.BAD_REQUEST,
                 "Illegal Argument",
                 "error"
@@ -85,7 +85,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<Map<String, Object>> handleDataAccessException(DataAccessException ex) {
         Map<String, Object> errorResponse = createErrorResponse(
-                "데이터베이스 오류가 발생했습니다.",
+                "데이터베이스 접근 오류가 발생했습니다. 요청값이 올바른지 확인해주세요.",
                 "A database error occurred.",
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Database Error",
@@ -98,7 +98,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
         Map<String, Object> errorResponse = createErrorResponse(
-                "알 수 없는 오류가 발생했습니다.",
+                "알 수 없는 오류가 발생했습니다. 서버 빌드 중, 또는 서버/네트워크 오류",
                 "An unknown error occurred.",
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Internal Server Error",

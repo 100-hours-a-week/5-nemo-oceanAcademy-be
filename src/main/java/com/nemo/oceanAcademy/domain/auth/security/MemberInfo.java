@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.auth.security;
-
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

@@ -5,7 +5,6 @@ import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomCreateDto
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomDashboardDto;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomUpdateDto;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto;
-import com.nemo.oceanAcademy.domain.classroom.application.exception.ClassroomNotFoundException;
 import com.nemo.oceanAcademy.domain.classroom.application.service.ClassroomService;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -111,12 +110,6 @@ public class ClassroomController {
     @GetMapping("/{classId}")
     public ResponseEntity<?> getClassroomById(@PathVariable Long classId) {
         ClassroomResponseDto classroom = classroomService.getClassroomById(classId);
-        if (classroom == null) {
-            throw new ClassroomNotFoundException(
-                    "강의실을 찾을 수 없습니다.",
-                    "Classroom with ID " + classId + " not found"
-            );
-        }
         return ApiResponse.success("강의실 조회 성공", "Classroom retrieved successfully", classroom);
     }
 

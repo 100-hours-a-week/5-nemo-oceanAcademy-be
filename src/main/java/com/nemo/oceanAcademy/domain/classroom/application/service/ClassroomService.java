@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.classroom.application.service;
-
 import com.nemo.oceanAcademy.domain.classroom.application.dto.*;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.ClassroomRepository;
@@ -82,9 +81,9 @@ public class ClassroomService {
     // 새로운 강의 생성
     public ClassroomResponseDto createClassroom(ClassroomCreateDto classroomCreateDto) {
         Category category = categoryRepository.findById(classroomCreateDto.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("카테고리를 찾을 수 없습니다.", "Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 카테고리를 찾을 수 없습니다.", "Category not found"));
         User user = userRepository.findById(classroomCreateDto.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("강사를 찾을 수 없습니다.", "Instructor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 강사를 찾을 수 없습니다.", "Instructor not found"));
 
         Classroom classroom = Classroom.builder()
                 .category(category)
@@ -106,7 +105,7 @@ public class ClassroomService {
     // 강의실 정보 업데이트
     public ClassroomResponseDto updateClassroom(Long classId, ClassroomUpdateDto classroomUpdateDto) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("강의를 찾을 수 없습니다.", "Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
 
         if (classroomUpdateDto.getName() != null) classroom.setName(classroomUpdateDto.getName());
         if (classroomUpdateDto.getObject() != null) classroom.setObject(classroomUpdateDto.getObject());
@@ -124,14 +123,14 @@ public class ClassroomService {
     // 개별 강의실 조회
     public ClassroomResponseDto getClassroomById(Long classId) {
         Classroom classroom = classroomRepository.findByIdWithJoins(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("강의를 찾을 수 없습니다.", "Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
         return toClassroomResponseDto(classroom);
     }
 
     // Soft Delete 방식으로 강의실 삭제
     public void deleteClassroom(Long classId) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("강의를 찾을 수 없습니다.", "Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
         classroom.setDeletedAt(LocalDateTime.now());
         classroomRepository.save(classroom);
     }
@@ -139,7 +138,7 @@ public class ClassroomService {
     // 사용자의 강의실 역할 확인
     public String getUserRoleInClassroom(Long classId, String userId) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("강의를 찾을 수 없습니다.", "Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
 
         if (classroom.getUser().getId().equals(userId)) return "강사";
 
@@ -154,7 +153,7 @@ public class ClassroomService {
     // 강의실 대시보드 정보 및 스케줄 가져오기
     public ClassroomDashboardDto getClassroomDashboard(Long classId, String userId) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("강의를 찾을 수 없습니다.", "Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
         String role = getUserRoleInClassroom(classId, userId);
         List<ScheduleDto> schedules = scheduleRepository.findSchedulesByClassroomId(classId);
 
@@ -178,9 +177,9 @@ public class ClassroomService {
     // 수강 신청
     public void enrollParticipant(String userId, Long classId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId, "User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + userId + ")의 사용자를 찾을 수 없습니다.", "User not found"));
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("Classroom not found with id: " + classId, "Classroom not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" +  classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
 
         Participant participant = Participant.builder()
                 .user(user)
