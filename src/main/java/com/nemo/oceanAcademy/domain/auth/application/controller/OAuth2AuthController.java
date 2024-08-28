@@ -1,5 +1,5 @@
 package com.nemo.oceanAcademy.domain.auth.application.controller;
-
+import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,10 +30,10 @@ public class OAuth2AuthController {
      * @return 카카오 앱 키
      */
     @GetMapping("/kakao/app-key")
-    public ResponseEntity<?> getKakaoAppKey() {
+    public ResponseEntity<Map<String, String>> getKakaoAppKey() {
         Map<String, String> response = new HashMap<>();
         response.put("appKey", kakaoConfig.getKakaoClientId());
-        return ApiResponse.success("카카오 앱 키 발급 성공", "Kakao app key retrieved successfully", response);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -43,7 +42,7 @@ public class OAuth2AuthController {
      * @return JWT 액세스 토큰 및 리프레시 토큰
      */
     @GetMapping("/kakao/callback")
-    public ResponseEntity<?> kakaoLogin(@RequestParam("code") String code) {
+    public ResponseEntity<Map<String, String>> kakaoLogin(@RequestParam("code") String code) {
         String kakaoAccessToken = authService.getKakaoAccessToken(code);
         Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
 
@@ -58,18 +57,37 @@ public class OAuth2AuthController {
         tokens.put("accessToken", accessToken);
         tokens.put("refreshToken", refreshToken);
 
-        return ApiResponse.success("JWT 발급 성공", "JWT tokens issued successfully", tokens);
+        return ResponseEntity.ok(tokens);
+    }
+
+    /* ----------------------------------------------------------------- */
+
+    /**
+     * 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환
+     * @param request HttpServletRequest 객체로부터 userId 추출
+     * @return userId 인증된 사용자 ID
+     * @throws UnauthorizedException 사용자 ID가 없을 경우 예외 발생
+     */
+    private String getAuthenticatedUserId(HttpServletRequest request) {
+        String userId = (String) request.getAttribute("userId");
+        if (userId == null) {
+            throw new UnauthorizedException(
+                    "사용자 인증에 실패했습니다. (토큰 없음)",
+                    "Unauthorized request: userId not found"
+            );
+        }
+        return userId;
     }
 
     /**
      * 회원가입 여부 확인
-     * @param request 인증된 사용자 요청 객체 (JWT에서 userId 추출)
+     * @param request 인증된 사용자 요청 객체
      * @return 회원가입 여부 결과
      */
     @GetMapping("/signup")
     public ResponseEntity<?> checkSignup(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");
-        authService.checkSignup(userId);  // 예외가 발생하지 않으면 회원임을 의미
+        String userId = getAuthenticatedUserId(request);
+        authService.checkSignup(userId);
         return ApiResponse.success("가입된 회원입니다.", "Existing member", null);
     }
 
@@ -84,9 +102,9 @@ public class OAuth2AuthController {
     public ResponseEntity<?> signup(HttpServletRequest request,
                                     @RequestParam("nickname") String nickname,
                                     @RequestPart(value = "file", required = false) MultipartFile file) {
-        String userId = (String) request.getAttribute("userId");
-        authService.signup(userId, nickname, file); // 서비스에서 예외 처리
-        return ApiResponse.success("회원가입 완료", "Signup successful", null);
+        String userId = getAuthenticatedUserId(request);
+        authService.signup(userId, nickname, file);
+        return ApiResponse.success("회원가입이 완료되었습니다.", "Signup successful", null);
     }
 
     /**
@@ -96,8 +114,8 @@ public class OAuth2AuthController {
      */
     @DeleteMapping("/signup")
     public ResponseEntity<?> withdraw(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");
-        authService.withdraw(userId); // 서비스에서 예외 처리
-        return ApiResponse.success("회원탈퇴 완료", "Withdrawal successful", null);
+        String userId = getAuthenticatedUserId(request);
+        authService.withdraw(userId);
+        return ApiResponse.success("회원탈퇴가 완료되었습니다.", "Withdrawal successful", null);
     }
 }
