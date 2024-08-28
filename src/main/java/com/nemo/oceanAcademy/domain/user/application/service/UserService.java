@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.user.application.service;
-
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
@@ -15,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -116,11 +114,11 @@ public class UserService {
             // 고유한 파일 이름 생성 (UUID + 원래 파일명)
             String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
             Path filePath = Paths.get(uploadDir + "/" + fileName);
-            Files.createDirectories(filePath.getParent()); // 저장 경로가 없으면 생성
-            Files.write(filePath, file.getBytes()); // 파일 저장
-            return filePath.toString(); // 저장된 파일 경로 반환
+            Files.createDirectories(filePath.getParent());                  // 저장 경로가 없으면 생성
+            Files.write(filePath, file.getBytes());                         // 파일 저장
+            return filePath.toString();                                     // 저장된 파일 경로 반환
         } catch (IOException e) {
-            throw new RuntimeException("파일 저장에 실패했습니다.", e); // 파일 저장 실패 시 예외 처리
+            throw new RuntimeException("파일 저장에 실패했습니다.", e);           // 파일 저장 실패 시 예외 처리
         }
     }
 }

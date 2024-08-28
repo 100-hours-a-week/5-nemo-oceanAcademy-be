@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.user.application.controller;
-
 import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.common.response.ErrorResponse;
@@ -48,7 +47,7 @@ public class UserController {
     @GetMapping
     public ResponseEntity<?> getUserInfo(HttpServletRequest request) {
         String userId = getAuthenticatedUserId(request);
-        UserResponseDTO userResponseDTO = userService.getUserInfo(userId); // 성공 결과만 처리
+        UserResponseDTO userResponseDTO = userService.getUserInfo(userId);
 
         return ApiResponse.success("사용자 정보 조회 성공", "User info retrieved successfully", userResponseDTO);
     }
@@ -65,7 +64,7 @@ public class UserController {
                                                @RequestBody UserUpdateDTO userUpdateDTO,
                                                @RequestPart(value = "file", required = false) MultipartFile file) {
         String userId = getAuthenticatedUserId(request);
-        userService.updateUserProfile(request, userUpdateDTO, file); // 성공 처리만 남김
+        userService.updateUserProfile(request, userUpdateDTO, file);
         return ApiResponse.success("회원 정보가 수정되었습니다.", "User profile updated successfully", null);
     }
 

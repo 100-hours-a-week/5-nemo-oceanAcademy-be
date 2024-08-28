@@ -2,6 +2,7 @@ package com.nemo.oceanAcademy.domain.classroom.application.service;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.*;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.ClassroomRepository;
+import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantResponseDto;
 import com.nemo.oceanAcademy.domain.category.dataAccess.entity.Category;
 import com.nemo.oceanAcademy.domain.category.dataAccess.repository.CategoryRepository;
 import com.nemo.oceanAcademy.domain.participant.dataAccess.entity.Participant;
@@ -146,8 +147,26 @@ public class ClassroomService {
     }
 
     // 강의를 듣는 수강생 리스트 조회
-    public List<User> getClassroomStudents(Long classId) {
-        return participantRepository.findUsersByClassroomId(classId);
+    public List<ParticipantResponseDto> getClassroomStudents(Long classId) {
+        // 강의실을 찾지 못하면 예외 발생
+        Classroom classroom = classroomRepository.findById(classId)
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
+
+        // 수강생 목록 조회
+        List<Participant> participants = participantRepository.findParticipantsByClassroomId(classId);
+
+        // Participant 엔티티를 ParticipantResponseDto로 변환
+        return participants.stream()
+                .map(participant -> ParticipantResponseDto.builder()
+                        .id(participant.getUser().getId())
+                        .email(participant.getUser().getEmail())
+                        .nickname(participant.getUser().getNickname())
+                        .profileImagePath(participant.getUser().getProfileImagePath())
+                        .createdAt(participant.getUser().getCreatedAt())
+                        .deletedAt(participant.getUser().getDeletedAt())
+                        .reviews(participant.getUser().getReviews())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     // 강의실 대시보드 정보 및 스케줄 가져오기

@@ -15,8 +15,9 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     // 모든 강의 일정 조회
     List<Schedule> findByClassroom(Classroom classroom);
 
-    // 특정 강의 일정 조회 - schedule id
-    Optional<Schedule> findByIdAndClassroom(Long id, Classroom classroom);
+    // 특정 강의 ID로 순차적 인덱스를 가진 일정 조회
+    @Query("SELECT s FROM Schedule s WHERE s.classroom = :classroom ORDER BY s.id ASC")
+    List<Schedule> findSchedulesByClassroomOrderedById(@Param("classroom") Classroom classroom);
 
     // 모든 강의 일정 DTO로 반환하는 쿼리
     @Query("SELECT new com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto(" +

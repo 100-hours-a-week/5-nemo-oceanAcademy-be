@@ -1,6 +1,7 @@
 package com.nemo.oceanAcademy.domain.auth.application.controller;
 import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
+import com.nemo.oceanAcademy.domain.auth.application.dto.SignupRequestDto;
 import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
@@ -94,18 +95,21 @@ public class OAuth2AuthController {
     /**
      * 회원가입 신청
      * @param request 인증된 사용자 요청 객체
-     * @param nickname 사용자 닉네임
+     * @param signupRequestDto 사용자 닉네임
      * @param file 프로필 이미지 파일 (선택)
      * @return 회원가입 결과
      */
     @PostMapping("/signup")
     public ResponseEntity<?> signup(HttpServletRequest request,
-                                    @RequestParam("nickname") String nickname,
-                                    @RequestPart(value = "file", required = false) MultipartFile file) {
+                                    @RequestBody SignupRequestDto signupRequestDto,                      // Request body : 로 nickname 받음
+                                    @RequestPart(value = "file", required = false) MultipartFile file) { // Form data : 파일 받음
         String userId = getAuthenticatedUserId(request);
+        String nickname = signupRequestDto.getNickname();  // JSON으로 받은 닉네임
+
         authService.signup(userId, nickname, file);
         return ApiResponse.success("회원가입이 완료되었습니다.", "Signup successful", null);
     }
+
 
     /**
      * 회원탈퇴 신청 (soft delete)

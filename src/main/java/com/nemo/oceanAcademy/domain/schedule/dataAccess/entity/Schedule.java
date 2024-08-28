@@ -24,7 +24,7 @@ public class Schedule {
     private Long id;
 
     // FK 강의실 아이디
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(nullable = false, name = "classroom_id")
     @NotNull(message = "Classroom must not be null")
     private Classroom classroom;
