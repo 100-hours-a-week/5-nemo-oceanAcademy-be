@@ -68,7 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/classes").access(customAuthorizationManager)
 
                         // Schedules
-                        .requestMatchers(HttpMethod.DELETE, "/api/classes/{classId}/schedule/{id}").authenticated() // 강의 일정 삭제, 강사만 가능
+                        .requestMatchers(HttpMethod.DELETE, "/api/classes/{classId}/schedule").authenticated() // 강의 일정 삭제, 강사만 가능
                         .requestMatchers(HttpMethod.POST, "/api/classes/{classId}/schedule").authenticated()        // 강의 일정 생성하기, 강사만 가능
                         .requestMatchers(HttpMethod.GET, "/api/classes/{classId}/schedule").authenticated()         // 강의 일정 불러오기, 수강자와 강사만 가능
                         .anyRequest().permitAll()  // 나머지 요청은 인증 없이 허용
