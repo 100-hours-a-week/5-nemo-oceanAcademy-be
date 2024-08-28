@@ -26,7 +26,12 @@ public class ClassroomController {
 
     private final ClassroomService classroomService;
 
-    /** 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환 */
+    /**
+     * 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환
+     * @param request HttpServletRequest 객체로부터 userId 추출
+     * @return userId 인증된 사용자 ID
+     * @throws UnauthorizedException 사용자 ID가 없을 경우 예외 발생
+     */
     private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
@@ -40,7 +45,6 @@ public class ClassroomController {
 
     /**
      * 전체 강의실 목록 조회
-     *
      * @param request    인증된 사용자 요청 객체
      * @param target     필터링 옵션 ("enrolled", "created" 등)
      * @param categoryId 카테고리 ID (선택)
@@ -65,7 +69,6 @@ public class ClassroomController {
 
     /**
      * 새로운 강의실 생성
-     *
      * @param request            인증된 사용자 요청 객체
      * @param classroomCreateDto 생성할 강의실 정보
      * @return ResponseEntity<ClassroomResponseDto> 생성된 강의실 정보
@@ -80,7 +83,6 @@ public class ClassroomController {
 
     /**
      * 사용자 역할 확인
-     *
      * @param request 인증된 사용자 요청 객체
      * @param classId 강의실 ID
      * @return ResponseEntity<String> 강사/수강생/관계없음의 사용자 역할
@@ -94,7 +96,6 @@ public class ClassroomController {
 
     /**
      * 강의실 개별 정보 조회
-     *
      * @param classId 강의실 ID
      * @return ResponseEntity<ClassroomResponseDto> 강의실 정보
      */
@@ -106,7 +107,6 @@ public class ClassroomController {
 
     /**
      * 강의실 정보 업데이트
-     *
      * @param request            인증된 사용자 요청 객체
      * @param classId            강의실 ID
      * @param classroomUpdateDto 업데이트할 정보
@@ -121,7 +121,6 @@ public class ClassroomController {
 
     /**
      * 강의실 삭제 (Soft Delete)
-     *
      * @param request 인증된 사용자 요청 객체
      * @param classId 강의실 ID
      * @return ResponseEntity<?> 삭제 완료 메시지 (204 No Content)
@@ -135,7 +134,6 @@ public class ClassroomController {
 
     /**
      * 강의 대시보드 정보 조회
-     *
      * @param request 인증된 사용자 요청 객체
      * @param classId 강의실 ID
      * @return ResponseEntity<ClassroomDashboardDto> 강의 대시보드 정보
@@ -149,7 +147,6 @@ public class ClassroomController {
 
     /**
      * 강의를 듣는 수강생 리스트 조회
-     *
      * @param request 인증된 사용자 요청 객체
      * @param classId 강의실 ID
      * @return ResponseEntity<List<User>> 수강생 리스트
@@ -163,7 +160,6 @@ public class ClassroomController {
 
     /**
      * 수강 신청
-     *
      * @param request 인증된 사용자 요청 객체
      * @param classId 강의실 ID
      * @return ResponseEntity<?> 수강 신청 성공 메시지

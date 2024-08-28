@@ -1,25 +1,21 @@
 package com.nemo.oceanAcademy.domain.user.application.controller;
-import com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto;
+
+import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
+import com.nemo.oceanAcademy.common.response.ApiResponse;
+import com.nemo.oceanAcademy.common.response.ErrorResponse;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserResponseDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
 import com.nemo.oceanAcademy.domain.user.application.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.List;
-/*
-    /api/users
-        Get - 사용자 정보 조회
-        Patch - 사용자 정보 업데이트
-
-    /api/users/checkNickname
-        Get 닉네임 중복 검사
-*/
-
+/**
+ * UserController는 사용자 정보 조회, 업데이트, 닉네임 중복 확인 등의 API를 처리합니다.
+ */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -27,44 +23,64 @@ public class UserController {
 
     private final UserService userService;
 
-    // TODO : 사용자 정보 조회 - 성공
-    @GetMapping
-    public ResponseEntity<UserResponseDTO> getUserInfo(HttpServletRequest request) {
-        System.out.println("오아아");
-        // JWT에서 추출한 사용자 ID 가져오기
+    /**
+     * 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환
+     * @param request HttpServletRequest 객체로부터 userId 추출
+     * @return userId 인증된 사용자 ID
+     * @throws UnauthorizedException 사용자 ID가 없을 경우 예외 발생
+     */
+    private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
-            return ResponseEntity.status(401).body(null); // 사용자 ID가 없을 때 401 Unauthorized 반환
+            throw new UnauthorizedException(
+                    "사용자 인증에 실패했습니다. (토큰 없음)",
+                    "Unauthorized request: userId not found"
+            );
         }
-
-        // 사용자 정보 조회
-        System.out.println(userId);
-        UserResponseDTO userResponseDTO = userService.getUserInfo(userId);
-        if (userResponseDTO != null) {
-            return ResponseEntity.ok(userResponseDTO); // 사용자 정보가 있으면 200 OK와 함께 반환
-        } else {
-            return ResponseEntity.status(404).body(null); // 사용자 정보가 없으면 404 Not Found 반환
-        }
+        return userId;
     }
 
-    // TODO : 사용자 정보 업데이트
+    /**
+     * 사용자 정보 조회
+     * @param request 인증된 사용자 요청 객체 (JWT에서 userId 추출)
+     * @return ResponseEntity<UserResponseDTO> 사용자 정보
+     */
+    @GetMapping
+    public ResponseEntity<?> getUserInfo(HttpServletRequest request) {
+        String userId = getAuthenticatedUserId(request);
+        UserResponseDTO userResponseDTO = userService.getUserInfo(userId); // 성공 결과만 처리
+
+        return ApiResponse.success("사용자 정보 조회 성공", "User info retrieved successfully", userResponseDTO);
+    }
+
+    /**
+     * 사용자 정보 업데이트
+     * @param request 인증된 사용자 요청 객체
+     * @param userUpdateDTO 업데이트할 사용자 정보
+     * @param file 업데이트할 프로필 이미지 파일 (선택)
+     * @return ResponseEntity<String> 업데이트 결과 메시지
+     */
     @PatchMapping
-    public ResponseEntity<String> updateUserProfile(HttpServletRequest request,
-                                                    @RequestBody UserUpdateDTO userUpdateDTO,
-                                                    @RequestPart(value = "file", required = false) MultipartFile file) {
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        userService.updateUserProfile(request, userUpdateDTO, file);
-        return ResponseEntity.ok("회원 정보가 수정되었습니다.");
+    public ResponseEntity<?> updateUserProfile(HttpServletRequest request,
+                                               @RequestBody UserUpdateDTO userUpdateDTO,
+                                               @RequestPart(value = "file", required = false) MultipartFile file) {
+        String userId = getAuthenticatedUserId(request);
+        userService.updateUserProfile(request, userUpdateDTO, file); // 성공 처리만 남김
+        return ApiResponse.success("회원 정보가 수정되었습니다.", "User profile updated successfully", null);
     }
 
-    // TODO : 닉네임 중복 확인  - 성공
+    /**
+     * 닉네임 중복 확인
+     * @param nickname 확인할 닉네임
+     * @return ResponseEntity<String> 닉네임 사용 가능 여부 메시지
+     */
     @GetMapping("/checkNickname")
-    public ResponseEntity<String> checkNickname(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<?> checkNickname(@RequestParam("nickname") String nickname) {
         boolean isAvailable = userService.isNicknameAvailable(nickname);
         if (isAvailable) {
-            return ResponseEntity.ok("사용 가능한 닉네임입니다.");
+            return ApiResponse.success("사용 가능한 닉네임입니다.", "Nickname is available", null);
         } else {
-            return ResponseEntity.status(409).body("중복된 닉네임입니다.");
+            return ErrorResponse.error("중복된 닉네임입니다.", "Nickname is already taken", HttpStatus.CONFLICT, null);
         }
     }
 }

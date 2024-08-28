@@ -22,7 +22,12 @@ public class ScheduleController {
 
     private final ScheduleService scheduleService;
 
-    /** 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환 */
+    /**
+     * 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환
+     * @param request HttpServletRequest 객체로부터 userId 추출
+     * @return userId 인증된 사용자 ID
+     * @throws UnauthorizedException 사용자 ID가 없을 경우 예외 발생
+     */
     private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
@@ -36,7 +41,6 @@ public class ScheduleController {
 
     /**
      * 강의 일정 목록 조회
-     *
      * @param classId 강의 ID
      * @param request 인증된 사용자 정보 포함 요청 객체
      * @return ResponseEntity<Map<String, Object>> 강의 일정 목록
@@ -50,7 +54,6 @@ public class ScheduleController {
 
     /**
      * 강의 일정 생성
-     *
      * @param classId 강의 ID
      * @param scheduleDto 생성할 강의 일정 정보
      * @param request 인증된 사용자 정보 포함 요청 객체
@@ -65,7 +68,6 @@ public class ScheduleController {
 
     /**
      * 강의 일정 삭제
-     *
      * @param classId 강의 ID
      * @param id 삭제할 일정 ID
      * @param request 인증된 사용자 정보 포함 요청 객체

@@ -1,4 +1,6 @@
 package com.nemo.oceanAcademy.domain.auth.application.controller;
+
+import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
@@ -8,21 +10,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.Map;
-/*
-    /api/auth/kakao/app-key
-        Get - 클라이언트에게 카카오 앱 키 발급
 
-    /api/auth/kakao/callback
-        Get - 카카오 인증 코드 처리 후 JWT 발급
-
-    /api/auth/signup
-        Get - 회원가입 여부 확인
-        Post - 회원가입 신청
-        Patch - 회원탈퇴 신청
-*/
-
+/**
+ * OAuth2AuthController는 카카오 OAuth2 인증 및 회원가입/탈퇴 관련 API를 처리합니다.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -32,17 +26,24 @@ public class OAuth2AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final KakaoConfig kakaoConfig;
 
-    // 클라이언트에게 카카오 앱 키 발급 (Rest Api App key)
+    /**
+     * 클라이언트에게 카카오 앱 키 발급
+     * @return 카카오 앱 키
+     */
     @GetMapping("/kakao/app-key")
-    public ResponseEntity<Map<String, String>> getKakaoAppKey() {
+    public ResponseEntity<?> getKakaoAppKey() {
         Map<String, String> response = new HashMap<>();
         response.put("appKey", kakaoConfig.getKakaoClientId());
-        return ResponseEntity.ok(response);
+        return ApiResponse.success("카카오 앱 키 발급 성공", "Kakao app key retrieved successfully", response);
     }
 
-    // 카카오 인증 코드 처리 후 JWT 발급
+    /**
+     * 카카오 인증 코드 처리 후 JWT 발급
+     * @param code 카카오 인증 코드
+     * @return JWT 액세스 토큰 및 리프레시 토큰
+     */
     @GetMapping("/kakao/callback")
-    public ResponseEntity<Map<String, String>> kakaoLogin(@RequestParam("code") String code) {
+    public ResponseEntity<?> kakaoLogin(@RequestParam("code") String code) {
         String kakaoAccessToken = authService.getKakaoAccessToken(code);
         Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
 
@@ -57,44 +58,46 @@ public class OAuth2AuthController {
         tokens.put("accessToken", accessToken);
         tokens.put("refreshToken", refreshToken);
 
-        return ResponseEntity.ok(tokens);
+        return ApiResponse.success("JWT 발급 성공", "JWT tokens issued successfully", tokens);
     }
 
-    // 회원가입 여부 확인
+    /**
+     * 회원가입 여부 확인
+     * @param request 인증된 사용자 요청 객체 (JWT에서 userId 추출)
+     * @return 회원가입 여부 결과
+     */
     @GetMapping("/signup")
     public ResponseEntity<?> checkSignup(HttpServletRequest request) {
-
-        // JwtAuthenticationFilter에 userId를 요청하여 받아옴 - JWT AccessToken에서 추출
         String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            return ResponseEntity.status(401).body("Unauthorized"); // 검증 - 인증 안됨
-        }
-        return authService.checkSignup(userId); // 회원가입 여부 확인, 요청 결과 반환
+        authService.checkSignup(userId);  // 예외가 발생하지 않으면 회원임을 의미
+        return ApiResponse.success("가입된 회원입니다.", "Existing member", null);
     }
 
-    // 회원가입 신청 - 정보는 파라미터가 아니라 바디에서 받아와야함, 프로필 이미지는 폼 데이터에서 받아와야함
+    /**
+     * 회원가입 신청
+     * @param request 인증된 사용자 요청 객체
+     * @param nickname 사용자 닉네임
+     * @param file 프로필 이미지 파일 (선택)
+     * @return 회원가입 결과
+     */
     @PostMapping("/signup")
     public ResponseEntity<?> signup(HttpServletRequest request,
                                     @RequestParam("nickname") String nickname,
                                     @RequestPart(value = "file", required = false) MultipartFile file) {
-
-        // JwtAuthenticationFilter에 userId를 요청하여 받아옴 - JWT AccessToken에서 추출
         String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            return ResponseEntity.status(401).body("Unauthorized"); // 검증 - 인증 안됨
-        }
-        return authService.signup(userId, nickname, file); // 회원가입 진행, 요청 결과 반환
+        authService.signup(userId, nickname, file); // 서비스에서 예외 처리
+        return ApiResponse.success("회원가입 완료", "Signup successful", null);
     }
 
-    // TODO : 회원탈퇴 신청 - soft delete - 성공 / 이슈
+    /**
+     * 회원탈퇴 신청 (soft delete)
+     * @param request 인증된 사용자 요청 객체
+     * @return 회원탈퇴 결과
+     */
     @DeleteMapping("/signup")
     public ResponseEntity<?> withdraw(HttpServletRequest request) {
-
-        // JwtAuthenticationFilter에 userId를 요청하여 받아옴 - JWT AccessToken에서 추출
         String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            return ResponseEntity.status(401).body("Unauthorized"); // 검증 - 인증 안됨
-        }
-        return authService.withdraw(userId); // 회원탈퇴 진행, 요청 결과 반환
+        authService.withdraw(userId); // 서비스에서 예외 처리
+        return ApiResponse.success("회원탈퇴 완료", "Withdrawal successful", null);
     }
 }
