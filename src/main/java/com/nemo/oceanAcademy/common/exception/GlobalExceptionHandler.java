@@ -28,6 +28,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
+    // 사용자 역할 권한 없음
+    @ExceptionHandler(RoleUnauthorizedException.class)
+    public ResponseEntity<?> handleRoleUnauthorizedException(RoleUnauthorizedException ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                ex.getMessageKor(),
+                ex.getMessageEng(),
+                HttpStatus.I_AM_A_TEAPOT,  // 418 I AM A TEAPOT
+                "Role Error",
+                ex.getData()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+
     // 이미 가입된 사용자 예외 처리
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
