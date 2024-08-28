@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.domain.classroom.application.controller;
+import com.nemo.oceanAcademy.common.exception.RoleUnauthorizedException;
 import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomCreateDto;
@@ -115,6 +116,14 @@ public class ClassroomController {
     @PatchMapping("/{classId}")
     public ResponseEntity<?> updateClassroom(HttpServletRequest request, @PathVariable Long classId, @Valid @RequestBody ClassroomUpdateDto classroomUpdateDto) {
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
+
+        // 강사만 접근 가능
+        if (!role.equals("강사")) {
+            throw new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+        }
+
         ClassroomResponseDto updatedClassroom = classroomService.updateClassroom(classId, classroomUpdateDto);
         return ApiResponse.success("강의실 정보 업데이트 성공", "Classroom updated successfully", updatedClassroom);
     }
@@ -128,6 +137,14 @@ public class ClassroomController {
     @DeleteMapping("/{classId}/delete")
     public ResponseEntity<?> deleteClassroom(HttpServletRequest request, @PathVariable Long classId) {
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
+
+        // 강사만 접근 가능
+        if (!role.equals("강사")) {
+            throw new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+        }
+
         classroomService.deleteClassroom(classId);
         return ApiResponse.success("강의실 삭제 성공", "Classroom deleted successfully", null);
     }
@@ -141,6 +158,13 @@ public class ClassroomController {
     @GetMapping("/{classId}/dashboard")
     public ResponseEntity<?> getClassroomDashboard(HttpServletRequest request, @PathVariable Long classId) {
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
+
+        // 강사나 수강생만 가능
+        if (role.equals("관계없음")) {
+            throw new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+        }
         ClassroomDashboardDto dashboard = classroomService.getClassroomDashboard(classId, userId);
         return ApiResponse.success("대시보드 조회 성공", "Dashboard retrieved successfully", dashboard);
     }
@@ -154,7 +178,13 @@ public class ClassroomController {
     @GetMapping("/{classId}/dashboard/students")
     public ResponseEntity<?> getClassroomStudents(HttpServletRequest request, @PathVariable Long classId) {
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
 
+        // 강사만 가능
+        if (!role.equals("강사")) {
+            throw new RoleUnauthorizedException("조회 접근 권한이 없습니다.", "Access denied");
+        }
         // 수강생 리스트를 가져와서 DTO로 변환 후 반환
         List<ParticipantResponseDto> students = classroomService.getClassroomStudents(classId);
         return ApiResponse.success("수강생 목록 조회 성공", "Students retrieved successfully", students);
@@ -169,6 +199,17 @@ public class ClassroomController {
     @PostMapping("/{classId}/enroll")
     public ResponseEntity<?> enrollParticipant(HttpServletRequest request, @PathVariable Long classId) {
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
+
+        // 수강생이나 강사는 수강신청 불가능
+        if (role.equals("수강생")) {
+            throw new RoleUnauthorizedException("이미 수강 중인 강의입니다.", "Access denied");
+        }
+        else if (role.equals("강사")) {
+            throw new RoleUnauthorizedException("본인이 개설한 강의는 수강이 불가능합니다.", "Access denied");
+        }
+
         classroomService.enrollParticipant(userId, classId);
         return ApiResponse.success("수강 신청 완료", "Enrollment successful", null);
     }
