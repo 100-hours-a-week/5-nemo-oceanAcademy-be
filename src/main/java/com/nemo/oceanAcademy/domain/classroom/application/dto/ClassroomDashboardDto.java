@@ -15,7 +15,7 @@ public class ClassroomDashboardDto {
 
     private Long id;                  // PK 강의실 아이디
     private String userId;            // 강사 아이디
-    private Integer categoryId;           // 카테고리 아이디
+    private Integer categoryId;       // 카테고리 아이디
     private String name;              // 강의 이름
     private String object;            // 강의 목표
     private String description;       // 강의 소개
