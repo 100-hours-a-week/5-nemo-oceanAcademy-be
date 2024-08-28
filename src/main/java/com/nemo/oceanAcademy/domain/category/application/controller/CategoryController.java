@@ -23,7 +23,6 @@ public class CategoryController {
 
     /**
      * 전체 카테고리 리스트 조회
-     *
      * @return ResponseEntity<List<CategoryDto>> 전체 카테고리 목록
      */
     @GetMapping
