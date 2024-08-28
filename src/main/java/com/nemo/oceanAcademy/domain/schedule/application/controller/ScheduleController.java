@@ -52,9 +52,10 @@ public class ScheduleController {
     public ResponseEntity<Map<String, Object>> getSchedulesByClassId(HttpServletRequest request, @PathVariable Long classId) {
         String userId = getAuthenticatedUserId(request);
         String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
 
         // 수강생이나 강사만 접근 가능
-        if (!role.equals("강사") && !role.equals("수강생")) {
+        if (role.equals("관계없음")) {
             throw new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
         }
 
@@ -73,6 +74,7 @@ public class ScheduleController {
     public ResponseEntity<Map<String, Object>> createSchedule(HttpServletRequest request, @PathVariable Long classId, @RequestBody ScheduleDto scheduleDto) {
         String userId = getAuthenticatedUserId(request);
         String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
 
         // 강사만 접근 가능
         if (!role.equals("강사")) {
@@ -95,6 +97,7 @@ public class ScheduleController {
                                                               @RequestBody Map<String, Long> scheduleData) {
         String userId = getAuthenticatedUserId(request);
         String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
 
         // 강사만 접근 가능
         if (!role.equals("강사")) {

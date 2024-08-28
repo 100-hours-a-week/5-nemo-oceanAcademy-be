@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
                 "Role Error",
                 ex.getData()
         );
-        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(errorResponse, HttpStatus.I_AM_A_TEAPOT);
     }
 
     // 이미 가입된 사용자 예외 처리
