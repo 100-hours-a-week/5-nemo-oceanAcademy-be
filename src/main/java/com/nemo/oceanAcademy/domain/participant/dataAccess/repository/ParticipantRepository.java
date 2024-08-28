@@ -12,6 +12,6 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
     boolean existsByClassroomIdAndUserId(Long classroomId, String userId);
 
     // classroom_id로 수강생 목록 조회
-    @Query("SELECT p.user FROM Participant p WHERE p.classroom.id = :classroomId")
-    List<User> findUsersByClassroomId(@Param("classroomId") Long classroomId);
+    @Query("SELECT p FROM Participant p WHERE p.classroom.id = :classroomId")
+    List<Participant> findParticipantsByClassroomId(@Param("classroomId") Long classroomId);
 }

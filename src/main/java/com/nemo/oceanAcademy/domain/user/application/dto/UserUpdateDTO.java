@@ -1,17 +1,11 @@
 package com.nemo.oceanAcademy.domain.user.application.dto;
+import lombok.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserUpdateDTO {
 
     private String nickname;            // 선택적 필드
     private String email;               // 선택적 필드
-    private String profileImagePath;    // 선택적 필드
 }

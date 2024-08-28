@@ -24,11 +24,13 @@ public class ClassroomCreateDto {
     @JsonProperty("name")
     private String name;
 
-    // 강의 목표 (선택)
+    // 강의 목표 (필수)
+    @NotNull(message = "강의 목표는 필수입니다.")
     @JsonProperty("object")
     private String object;
 
-    // 강의 소개 (선택)
+    // 강의 소개 (필수)
+    @NotNull(message = "강의 소개는 필수입니다.")
     @JsonProperty("description")
     private String description;
 

@@ -1,4 +1,6 @@
 package com.nemo.oceanAcademy.domain.schedule.application.controller;
+import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
+import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto;
 import com.nemo.oceanAcademy.domain.schedule.application.service.ScheduleService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,17 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-/*
-    /api/classes/{classId}/schedule
-        Get - 강의 일정 불러오기
-        Post - 강의 일정 생성하기
-    /api/classes/{classId}/schedule/{id}
-        Delete - 강의 일정 삭제하기
+import java.util.Map;
 
-    “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
-        /api/classes/{classId}/role
-*/
-
+/**
+ * ScheduleController는 강의 일정 관련 API를 처리합니다.
+ * 강의 일정 조회, 생성, 삭제 기능을 제공합니다.
+ */
 @RestController
 @RequestMapping("/api/classes/{classId}/schedule")
 @RequiredArgsConstructor
@@ -25,30 +22,64 @@ public class ScheduleController {
 
     private final ScheduleService scheduleService;
 
-    // TODO : 강의 일정 불러오기 - 성공
+    /**
+     * 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환
+     * @param request HttpServletRequest 객체로부터 userId 추출
+     * @return userId 인증된 사용자 ID
+     * @throws UnauthorizedException 사용자 ID가 없을 경우 예외 발생
+     */
+    private String getAuthenticatedUserId(HttpServletRequest request) {
+        String userId = (String) request.getAttribute("userId");
+        if (userId == null) {
+            throw new UnauthorizedException(
+                    "사용자 인증에 실패했습니다. (토큰 없음)",
+                    "Unauthorized request: userId not found"
+            );
+        }
+        return userId;
+    }
+
+    /**
+     * 강의 일정 목록 조회
+     * @param classId 강의 ID
+     * @param request 인증된 사용자 정보 포함 요청 객체
+     * @return ResponseEntity<Map<String, Object>> 강의 일정 목록
+     */
     @GetMapping
-    public ResponseEntity<List<ScheduleDto>> getSchedulesByClassId(@PathVariable Long classId, HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");  // JWT에서 추출한 사용자 ID 가져오기
-        System.out.println(userId);
+    public ResponseEntity<Map<String, Object>> getSchedulesByClassId(HttpServletRequest request, @PathVariable Long classId) {
+        String userId = getAuthenticatedUserId(request);
         List<ScheduleDto> schedules = scheduleService.getSchedulesByClassId(classId, userId);
-        return ResponseEntity.ok(schedules);
+        return ApiResponse.success("강의 일정 목록 조회 성공", "Schedules retrieved successfully", schedules);
     }
 
-    // TODO : 강의 일정 생성하기 - 성공
+    /**
+     * 강의 일정 생성
+     * @param classId 강의 ID
+     * @param scheduleDto 생성할 강의 일정 정보
+     * @param request 인증된 사용자 정보 포함 요청 객체
+     * @return ResponseEntity<Map<String, Object>> 생성된 강의 일정 정보
+     */
     @PostMapping
-    public ResponseEntity<ScheduleDto> createSchedule(@PathVariable Long classId, @RequestBody ScheduleDto scheduleDto, HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");  // JWT에서 추출한 사용자 ID 가져오기
-        System.out.println(userId);
+    public ResponseEntity<Map<String, Object>> createSchedule(HttpServletRequest request, @PathVariable Long classId, @RequestBody ScheduleDto scheduleDto) {
+        String userId = getAuthenticatedUserId(request);
         ScheduleDto createdSchedule = scheduleService.createSchedule(classId, scheduleDto, userId);
-        return ResponseEntity.ok(createdSchedule);
+        return ApiResponse.success("강의 일정 생성 성공", "Schedule created successfully", createdSchedule);
     }
 
-    // TODO : 강의 일정 삭제하기 - 성공
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable Long classId, @PathVariable Long id, HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");  // JWT에서 추출한 사용자 ID 가져오기
-        System.out.println(userId);
-        scheduleService.deleteSchedule(classId, id, userId);
-        return ResponseEntity.noContent().build();
+    /**
+     * 강의 일정 삭제
+     * @param classId 강의 ID
+     * @param scheduleData 삭제할 일정 ID
+     * @param request 인증된 사용자 정보 포함 요청 객체
+     * @return ResponseEntity<Map<String, Object>> 삭제 결과
+     */
+    @DeleteMapping
+    public ResponseEntity<Map<String, Object>> deleteSchedule(HttpServletRequest request,
+                                                              @PathVariable Long classId,
+                                                              @RequestBody Map<String, Long> scheduleData) {
+        String userId = getAuthenticatedUserId(request);
+        Long scheduleIndex = scheduleData.get("schedule_id");
+        scheduleService.deleteSchedule(classId, scheduleIndex, userId);
+        return ApiResponse.success("강의 일정 삭제 성공", "Schedule deleted successfully", null);
     }
 }

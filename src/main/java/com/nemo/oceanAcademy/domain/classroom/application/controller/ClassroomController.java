@@ -1,44 +1,24 @@
 package com.nemo.oceanAcademy.domain.classroom.application.controller;
+import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
+import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomCreateDto;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomDashboardDto;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomUpdateDto;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto;
 import com.nemo.oceanAcademy.domain.classroom.application.service.ClassroomService;
-import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantDto;
-import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
+import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantResponseDto;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.time.LocalDateTime;
 import java.util.List;
-/*
-    /api/classes
-        Get - 전체 강의실 조회
-        Post - 새로운 강의실 생성
 
-    /api/classes/{classId}/role
-        Get - 해당 강의실의 "강사/수강생/관계없음" 구분
-
-    /api/classes/{classId}
-        Get - 개별 강의실 조회
-        Patch - 강의실 정보 업데이트
-
-    /api/classes/{classId}/delete - 숙희분과 상의함, api 변경
-        Patch - 강의실 삭제
-
-    /api/classes/{classId}/dashboard
-        Get - 강의 대시보드 정보 불러오기
-
-    /api/classes/{classId}/dashboard/students
-        Get - 강의를 듣는 수강생 리스트 정보 불러오기
-
-    /api/classes/{classId}/enroll
-        Post - 강의 수강신청
-
-*/
+/**
+ * ClassroomController는 강의 관련 메인 API를 처리합니다.
+ * 강의 조회, 생성, 삭제 기능 등을 제공합니다.
+ */
 @RestController
 @RequestMapping("/api/classes")
 @RequiredArgsConstructor
@@ -46,145 +26,150 @@ public class ClassroomController {
 
     private final ClassroomService classroomService;
 
-    // TODO : 전체 강의실 조회 - 성공
+    /**
+     * 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환
+     * @param request HttpServletRequest 객체로부터 userId 추출
+     * @return userId 인증된 사용자 ID
+     * @throws UnauthorizedException 사용자 ID가 없을 경우 예외 발생
+     */
+    private String getAuthenticatedUserId(HttpServletRequest request) {
+        String userId = (String) request.getAttribute("userId");
+        if (userId == null) {
+            throw new UnauthorizedException(
+                    "사용자 인증에 실패했습니다. (토큰 없음)",
+                    "Unauthorized request: userId not found"
+            );
+        }
+        return userId;
+    }
+
+    /**
+     * 전체 강의실 목록 조회
+     * @param request    인증된 사용자 요청 객체
+     * @param target     필터링 옵션 ("enrolled", "created" 등)
+     * @param categoryId 카테고리 ID (선택)
+     * @param page       페이지 번호 (기본값: 0)
+     * @return ResponseEntity<List<ClassroomResponseDto>> 강의실 목록
+     */
     @GetMapping
-    public ResponseEntity<List<ClassroomResponseDto>> getAllClassrooms(
+    public ResponseEntity<?> getAllClassrooms(
             HttpServletRequest request,
             @RequestParam(value = "target", required = false) String target,
             @RequestParam(value = "category", required = false) Integer categoryId,
             @RequestParam(value = "page", defaultValue = "0") int page) {
 
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            System.out.println("userId 추출 불가, 인증되지 않은 요청");
-            return ResponseEntity.status(401).body(null);
+        String userId = null;
+        if ("enrolled".equals(target) || "created".equals(target)) {
+            userId = getAuthenticatedUserId(request);
         }
 
-        // 한 페이지에 10개씩 표시
-        int pageSize = 10;
-
-        // 서비스 메서드 호출 및 필터링/페이징 처리
-        List<ClassroomResponseDto> classrooms = classroomService.getFilteredClassrooms(target, categoryId, userId, page, pageSize);
-
-        System.out.println("필터링된 강의실 조회 완료!");
-        return ResponseEntity.ok(classrooms);
+        List<ClassroomResponseDto> classrooms = classroomService.getFilteredClassrooms(target, categoryId, userId, page, 10);
+        return ApiResponse.success("강의실 목록 조회 성공", "Classrooms retrieved successfully", classrooms);
     }
 
-    // TODO : 새로운 강의실 생성 - 성공
-    // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
+    /**
+     * 새로운 강의실 생성
+     * @param request            인증된 사용자 요청 객체
+     * @param classroomCreateDto 생성할 강의실 정보
+     * @return ResponseEntity<ClassroomResponseDto> 생성된 강의실 정보
+     */
     @PostMapping
-    public ResponseEntity<ClassroomResponseDto> createClassroom(HttpServletRequest request, @RequestBody ClassroomCreateDto classroomCreateDto) {
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            System.out.println("userId 추출 불가, 인증되지 않은 요청");
-            return ResponseEntity.status(401).body(null);
-        }
-        // 강의실 생성 로직
+    public ResponseEntity<?> createClassroom(HttpServletRequest request, @Valid @RequestBody ClassroomCreateDto classroomCreateDto) {
+        String userId = getAuthenticatedUserId(request);
         classroomCreateDto.setUserId(userId);
-        ClassroomResponseDto createdClassroom = classroomService.createClassroom(classroomCreateDto);  // 강의실 생성
-        System.out.println("새로운 강의실 생성 완료!");
-        return ResponseEntity.status(201).body(createdClassroom);  // 201 Created
+        ClassroomResponseDto createdClassroom = classroomService.createClassroom(classroomCreateDto);
+        return ApiResponse.success("강의실 생성 성공", "Classroom created successfully", createdClassroom);
     }
 
-    // TODO : 해당 강의실의 "강사/수강생/관계없음" 구분 - 성공 , 수강생만 확인 - 성공
+    /**
+     * 사용자 역할 확인
+     * @param request 인증된 사용자 요청 객체
+     * @param classId 강의실 ID
+     * @return ResponseEntity<String> 강사/수강생/관계없음의 사용자 역할
+     */
     @GetMapping("/{classId}/role")
-    public ResponseEntity<String> getUserRoleInClassroom(HttpServletRequest request, @PathVariable Long classId) {
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            return ResponseEntity.status(401).body("인증되지 않은 요청");
-        }
-
+    public ResponseEntity<?> getUserRoleInClassroom(HttpServletRequest request, @PathVariable Long classId) {
+        String userId = getAuthenticatedUserId(request);
         String role = classroomService.getUserRoleInClassroom(classId, userId);
-        return ResponseEntity.ok(role);
+        return ApiResponse.success("역할 조회 성공", "Role retrieved successfully", role);
     }
 
-
-    // TODO : 개별 강의실 조회 - 성공
-    // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
+    /**
+     * 강의실 개별 정보 조회
+     * @param classId 강의실 ID
+     * @return ResponseEntity<ClassroomResponseDto> 강의실 정보
+     */
     @GetMapping("/{classId}")
-    public ResponseEntity<ClassroomResponseDto> getClassroomById(@PathVariable Long classId) {
+    public ResponseEntity<?> getClassroomById(@PathVariable Long classId) {
         ClassroomResponseDto classroom = classroomService.getClassroomById(classId);
-        System.out.println("개별 강의실 조회 완료!");
-        return ResponseEntity.ok(classroom);
+        return ApiResponse.success("강의실 조회 성공", "Classroom retrieved successfully", classroom);
     }
 
-
-    // TODO : 강의실 정보 업데이트 - 성공
-    // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
+    /**
+     * 강의실 정보 업데이트
+     * @param request            인증된 사용자 요청 객체
+     * @param classId            강의실 ID
+     * @param classroomUpdateDto 업데이트할 정보
+     * @return ResponseEntity<ClassroomResponseDto> 업데이트된 강의실 정보
+     */
     @PatchMapping("/{classId}")
-    public ResponseEntity<ClassroomResponseDto> updateClassroom(HttpServletRequest request, @PathVariable Long classId, @RequestBody ClassroomUpdateDto classroomUpdateDto) {
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            System.out.println("userId 추출 불가, 인증되지 않은 요청");
-            return ResponseEntity.status(401).body(null);
-        }
+    public ResponseEntity<?> updateClassroom(HttpServletRequest request, @PathVariable Long classId, @Valid @RequestBody ClassroomUpdateDto classroomUpdateDto) {
+        String userId = getAuthenticatedUserId(request);
         ClassroomResponseDto updatedClassroom = classroomService.updateClassroom(classId, classroomUpdateDto);
-        System.out.println("강의실 정보 업데이트 완료!");
-        return ResponseEntity.ok(updatedClassroom);
+        return ApiResponse.success("강의실 정보 업데이트 성공", "Classroom updated successfully", updatedClassroom);
     }
 
-
-    // TODO : 강의실 삭제 - soft delete - 강사만 가능 - 성공
-    // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
+    /**
+     * 강의실 삭제 (Soft Delete)
+     * @param request 인증된 사용자 요청 객체
+     * @param classId 강의실 ID
+     * @return ResponseEntity<?> 삭제 완료 메시지 (204 No Content)
+     */
     @DeleteMapping("/{classId}/delete")
-    public ResponseEntity<Void> deleteClassroom(HttpServletRequest request, @PathVariable Long classId) {
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            System.out.println("userId 추출 불가, 인증되지 않은 요청");
-            return ResponseEntity.status(401).body(null);
-        }
-        // 강의실 삭제 로직
+    public ResponseEntity<?> deleteClassroom(HttpServletRequest request, @PathVariable Long classId) {
+        String userId = getAuthenticatedUserId(request);
         classroomService.deleteClassroom(classId);
-        System.out.println("강의실 삭제 완료!");
-        return ResponseEntity.noContent().build();  // 204 No Content
+        return ApiResponse.success("강의실 삭제 성공", "Classroom deleted successfully", null);
     }
 
-
-    // TODO : 강의 대시보드 정보와 스케줄 정보 불라오기 - 성공
-    // “/role api 해당 강의실의 "강사/수강생/관계없음" 구분”
+    /**
+     * 강의 대시보드 정보 조회
+     * @param request 인증된 사용자 요청 객체
+     * @param classId 강의실 ID
+     * @return ResponseEntity<ClassroomDashboardDto> 강의 대시보드 정보
+     */
     @GetMapping("/{classId}/dashboard")
-    public ResponseEntity<ClassroomDashboardDto> getClassroomDashboard(@PathVariable Long classId, HttpServletRequest request) {
-
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            return ResponseEntity.status(401).body(null);
-        }
-
-        // 대시보드 정보와 스케줄 정보 함께 조회
+    public ResponseEntity<?> getClassroomDashboard(HttpServletRequest request, @PathVariable Long classId) {
+        String userId = getAuthenticatedUserId(request);
         ClassroomDashboardDto dashboard = classroomService.getClassroomDashboard(classId, userId);
-
-        return ResponseEntity.ok(dashboard);
+        return ApiResponse.success("대시보드 조회 성공", "Dashboard retrieved successfully", dashboard);
     }
 
-    // TODO : 강의를 듣는 수강생 리스트 정보 조회 - 성공
+    /**
+     * 강의를 듣는 수강생 리스트 조회
+     * @param request 인증된 사용자 요청 객체
+     * @param classId 강의실 ID
+     * @return ResponseEntity<List<User>> 수강생 리스트
+     */
     @GetMapping("/{classId}/dashboard/students")
-    public ResponseEntity<List<User>> getClassroomStudents(@PathVariable Long classId) {
-        List<User> students = classroomService.getClassroomStudents(classId);
-        return ResponseEntity.ok(students);
+    public ResponseEntity<?> getClassroomStudents(HttpServletRequest request, @PathVariable Long classId) {
+        String userId = getAuthenticatedUserId(request);
+
+        // 수강생 리스트를 가져와서 DTO로 변환 후 반환
+        List<ParticipantResponseDto> students = classroomService.getClassroomStudents(classId);
+        return ApiResponse.success("수강생 목록 조회 성공", "Students retrieved successfully", students);
     }
 
-    // TODO : /api/classes/{classId}/enroll 수강신청 개발 - 성공
+    /**
+     * 수강 신청
+     * @param request 인증된 사용자 요청 객체
+     * @param classId 강의실 ID
+     * @return ResponseEntity<?> 수강 신청 성공 메시지
+     */
     @PostMapping("/{classId}/enroll")
-    public ResponseEntity<String> enrollParticipant(HttpServletRequest request, @PathVariable Long classId) {
-        // 인증: 사용자 ID - From JwtAuthenticationFilter
-        String userId = (String) request.getAttribute("userId");
-        if (userId == null) {
-            System.out.println("userId 추출 불가, 인증되지 않은 요청");
-            return ResponseEntity.status(401).body(null);
-        }
-        // ParticipantDto 생성
-        ParticipantDto participantDto = ParticipantDto.builder()
-                .userId(userId)
-                .classroomId(classId)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        classroomService.enrollParticipant(participantDto);
-        return ResponseEntity.ok("수강 신청이 완료되었습니다.");
+    public ResponseEntity<?> enrollParticipant(HttpServletRequest request, @PathVariable Long classId) {
+        String userId = getAuthenticatedUserId(request);
+        classroomService.enrollParticipant(userId, classId);
+        return ApiResponse.success("수강 신청 완료", "Enrollment successful", null);
     }
 }
