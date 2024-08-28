@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     boolean existsById(Long id);
@@ -48,5 +49,19 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
             "FROM Classroom c " +
             "WHERE (:categoryId IS NULL OR c.category.id = :categoryId)")
     List<ClassroomResponseDto> findAllClassrooms(@Param("categoryId") Integer categoryId, Pageable pageable);
+
+    // 전체 강의실 조회
+    @Query("SELECT c FROM Classroom c " +
+            "JOIN FETCH c.user u " +
+            "JOIN FETCH c.category cat")
+    List<Classroom> findAllWithJoins();
+
+    // 단일 강의실 조회
+    @Query("SELECT c FROM Classroom c " +
+            "JOIN FETCH c.user u " +
+            "JOIN FETCH c.category cat " +
+            "WHERE c.id = :classId")
+    Optional<Classroom> findByIdWithJoins(@Param("classId") Long classId);
+
 
 }

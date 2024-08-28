@@ -4,12 +4,17 @@ import com.nemo.oceanAcademy.domain.schedule.dataAccess.entity.Schedule;
 import com.nemo.oceanAcademy.domain.schedule.dataAccess.repository.ScheduleRepository;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.ClassroomRepository;
+import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * ScheduleService는 강의 일정 관련 비즈니스 로직을 처리합니다.
+ * - 강의 일정 조회, 생성, 삭제 로직을 담당합니다.
+ */
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
@@ -17,35 +22,64 @@ public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final ClassroomRepository classroomRepository;
 
-    // 강의 일정 불러오기
+    /**
+     * 강의 일정 목록 조회
+     *
+     * @param classId 강의 ID
+     * @param userId 사용자 ID (인증된 사용자)
+     * @return List<ScheduleDto> 강의 일정 목록
+     */
     public List<ScheduleDto> getSchedulesByClassId(Long classId, String userId) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 강의실을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
+
         return scheduleRepository.findByClassroom(classroom).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
-    // 강의 일정 생성하기
+    /**
+     * 강의 일정 생성
+     *
+     * @param classId 강의 ID
+     * @param scheduleDto 생성할 일정 정보
+     * @param userId 사용자 ID (인증된 사용자)
+     * @return ScheduleDto 생성된 강의 일정
+     */
     public ScheduleDto createSchedule(Long classId, ScheduleDto scheduleDto, String userId) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 강의실을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
+
         Schedule schedule = convertToEntity(scheduleDto);
         schedule.setClassroom(classroom);
         Schedule savedSchedule = scheduleRepository.save(schedule);
+
         return convertToDto(savedSchedule);
     }
 
-    // 강의 일정 삭제하기
-    public void deleteSchedule(Long classId, Long scheduleId, String userId) {
+    /**
+     * 강의 일정 삭제
+     *
+     * @param classId 강의 ID
+     * @param scheduleIndex 삭제할 일정 ID
+     * @param userId 사용자 ID (인증된 사용자)
+     */
+    public void deleteSchedule(Long classId, Long scheduleIndex, String userId) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 강의실을 찾을 수 없습니다."));
-        Schedule schedule = scheduleRepository.findByIdAndClassroom(scheduleId, classroom)
-                .orElseThrow(() -> new IllegalArgumentException("해당 스케줄을 찾을 수 없습니다."));
-        scheduleRepository.delete(schedule);
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
+        List<Schedule> schedules = scheduleRepository.findSchedulesByClassroomOrderedById(classroom);   // 강의에 속한 모든 일정을 ID 오름차순으로 조회
+        if (scheduleIndex < 1 || scheduleIndex > schedules.size()) {                                    // 사용자가 제공한 인덱스 범위 확인
+            throw new ResourceNotFoundException("해당 인덱스(" + scheduleIndex + ")에 맞는 일정을 찾을 수 없습니다.", "Schedule not found"); }
+        Schedule scheduleToDelete = schedules.get(scheduleIndex.intValue() - 1);                        // 인덱스가 1부터 시작하므로 0-based로 변경하여 해당 일정 가져오기
+        scheduleRepository.delete(scheduleToDelete);                                                    // 일정 삭제
     }
 
-    // 엔티티를 DTO로 변환
+    /**
+     * 엔티티를 DTO로 변환
+     *
+     * @param schedule 변환할 일정 엔티티
+     * @return ScheduleDto 변환된 DTO
+     */
     private ScheduleDto convertToDto(Schedule schedule) {
         return ScheduleDto.builder()
                 .id(schedule.getId())
@@ -57,7 +91,12 @@ public class ScheduleService {
                 .build();
     }
 
-    // DTO를 엔티티로 변환
+    /**
+     * DTO를 엔티티로 변환
+     *
+     * @param scheduleDto 변환할 일정 DTO
+     * @return Schedule 변환된 엔티티
+     */
     private Schedule convertToEntity(ScheduleDto scheduleDto) {
         return Schedule.builder()
                 .content(scheduleDto.getContent())

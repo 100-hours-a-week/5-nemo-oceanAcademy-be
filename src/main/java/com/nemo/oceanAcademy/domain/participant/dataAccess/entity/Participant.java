@@ -25,13 +25,13 @@ public class Participant {
     private Long id;
 
     //FK 강의실 아이디
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(nullable = false, name = "classroom_id")
     @NotNull(message = "Classroom must not be null")
     private Classroom classroom;
 
     ///FK 사용자(수강생) 아이디
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(nullable = false, name = "user_id")
     @NotNull(message = "User must not be null")
     private User user;

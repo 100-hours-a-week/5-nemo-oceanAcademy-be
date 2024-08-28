@@ -1,6 +1,8 @@
 package com.nemo.oceanAcademy.domain.auth.application.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
+import com.nemo.oceanAcademy.common.exception.UserAlreadyExistsException;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
@@ -31,7 +33,7 @@ public class OAuth2AuthService {
     private final KakaoConfig kakaoConfig;
 
     @Autowired
-    public OAuth2AuthService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider, KakaoConfig kakaoConfig) {
+    public OAuth2AuthService(UserRepository userRepository, KakaoConfig kakaoConfig) {
         this.userRepository = userRepository;
         this.kakaoConfig = kakaoConfig;
     }
@@ -49,10 +51,21 @@ public class OAuth2AuthService {
         return extractAccessToken(tokenResponse.getBody());
     }
 
+    // 액세스 토큰 추출 로직
+    private String extractAccessToken(String responseBody) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(responseBody);
+            return root.path("access_token").asText();
+        } catch (IOException e) {
+            throw new RuntimeException("엑세스 토큰 추출에 실패", e);
+        }
+    }
+
     // 리다이렉션
     public void redirectAfterLoginSuccess(HttpServletResponse response) {
         try {
-            String successRedirectUri = "http://localhost:3000/success";
+            String successRedirectUri = kakaoConfig.getRedirectUri();
             response.sendRedirect(successRedirectUri);
         } catch (IOException e) {
             throw new RuntimeException("로그인 성공, 리다이렉트 안됨", e);
@@ -79,77 +92,71 @@ public class OAuth2AuthService {
         return userInfo;
     }
 
-    // 회원가입 여부 확인
-    public ResponseEntity<?> checkSignup(String userId) {
-        // userId로 사용자 검색
-        if (userRepository.existsById(userId)) {
-            return ResponseEntity.ok("{\"message\": \"기존 회원임\"}");
-        } else {
-            return ResponseEntity.status(204).body("{\"message\": \"새로운 회원임\"}");
+    /* --------------------------------------------------------------------------------------- */
+
+    /**
+     * 회원가입 여부 확인
+     * @param userId 인증된 사용자 ID
+     * @throws ResourceNotFoundException 사용자가 없을 경우 예외 발생
+     */
+    public void checkSignup(String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("해당하는 ID(" + userId + ")의 사용자가 존재하지 않습니다.", "User not found");
         }
     }
 
-    // 회원가입 신청
-    public ResponseEntity<?> signup(String userId, String nickname, MultipartFile file) {
-        // userId로 사용자 검색
+    /**
+     * 회원가입 신청
+     * @param userId 사용자 ID
+     * @param nickname 사용자 닉네임
+     * @param file 프로필 이미지 파일 (선택)
+     * @throws RuntimeException 이미 가입된 사용자가 있을 경우 예외 발생
+     */
+    public void signup(String userId, String nickname, MultipartFile file) {
         if (userRepository.existsById(userId)) {
-            return ResponseEntity.status(400).body("{\"message\": \"기존 회원임\"}");
+            throw new UserAlreadyExistsException(
+                    "이미 가입된 사용자입니다.", // 한국어 메시지
+                    "User already exists."      // 영어 메시지
+            );
         }
 
-        // id, 닉네임, 프로필 이미지(선택) 사용자 등록
         User user = new User();
         user.setId(userId);
         user.setNickname(nickname);
-        String profileImagePath = saveProfileImage(file); // 선택
-        user.setProfileImagePath(profileImagePath);
+        user.setProfileImagePath(saveProfileImage(file));  // 프로필 이미지 저장
         userRepository.save(user);
-
-        return ResponseEntity.status(201).body("{\"message\": \"회원가입 완료\"}");
     }
 
-    // 회원 탈퇴 처리 - soft delete
-    public ResponseEntity<?> withdraw(String userId) {
-        // userId로 삭제할 사용자 검색
-        if (userRepository.existsById(userId)) {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-            // deleted_at 컬럼에 삭제 일시 기록
-            user.setDeletedAt(LocalDateTime.now());
-            userRepository.save(user);
-            return ResponseEntity.ok("{\"message\": \"회원탈퇴 완료\"}");
-        } else {
-            return ResponseEntity.status(400).body("{\"message\": \"회원탈퇴 실패\"}");
-        }
+
+    /**
+     * 회원탈퇴 처리 (soft delete)
+     * @param userId 사용자 ID
+     * @throws ResourceNotFoundException 존재하지 않는 사용자인 경우 예외 발생
+     */
+    public void withdraw(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + userId + ")의 사용자를 찾을 수 없습니다.", "User not found"));
+        user.setDeletedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
-    //  ------------------------------------------------------------------------- //
-
-    // 액세스 토큰 추출 로직
-    private String extractAccessToken(String responseBody) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(responseBody);
-            return root.path("access_token").asText();
-        } catch (IOException e) {
-            throw new RuntimeException("엑세스 토큰 추출에 실패", e);
-        }
-    }
-
-    // 프로필 이미지 저장 로직
+    /**
+     * 프로필 이미지 저장 로직
+     * @param file 저장할 파일
+     * @return 저장된 파일 경로 또는 null
+     */
     private String saveProfileImage(MultipartFile file) {
-        // 등록된 파일이 없다면 빈 경로 반환
         if (file == null || file.isEmpty()) {
             return null;
         }
-        // 등록된 파일이 있다면 프로필 경로 반환
         try {
             String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
             Path filePath = Paths.get("uploads/" + fileName);
             Files.createDirectories(filePath.getParent());
             Files.write(filePath, file.getBytes());
             return filePath.toString();
-        } catch (IOException e) {
-            throw new RuntimeException("프로필 이미지 저장에 실패", e);
+        } catch (Exception e) {
+            throw new RuntimeException("프로필 이미지 저장에 실패했습니다.", e);
         }
     }
 }
