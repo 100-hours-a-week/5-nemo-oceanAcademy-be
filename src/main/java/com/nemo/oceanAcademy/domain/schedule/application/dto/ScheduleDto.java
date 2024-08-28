@@ -13,6 +13,8 @@ import java.time.LocalTime;
 @Builder
 public class ScheduleDto {
 
+    // TODO : NotNull 설정 필요
+
     private Long id;              // PK 일정 아이디
     private Long classId;          // FK 강의실 아이디
     private String content;        // 강의 일정 내용

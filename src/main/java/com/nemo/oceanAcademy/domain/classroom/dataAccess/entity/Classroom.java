@@ -32,13 +32,13 @@ public class Classroom {
     private Long id;
 
     //FK 사용자(강사) 아이디
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(nullable = false, name = "user_id")
     @NotNull(message = "User must not be null")
     private User user;
 
     //FK 카테고리 아이디
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(nullable = false, name = "category_id")
     @NotNull(message = "Category must not be null")
     private Category category;
