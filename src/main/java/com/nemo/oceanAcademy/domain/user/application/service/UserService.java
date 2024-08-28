@@ -67,27 +67,24 @@ public class UserService {
      * 사용자 정보 업데이트
      * @param request HttpServletRequest를 통해 userId 추출
      * @param userUpdateDTO 업데이트할 사용자 정보 DTO
-     * @param file 업데이트할 프로필 이미지 파일 (선택)
+     * @param imagefile 업데이트할 프로필 이미지 파일 (선택)
      * @throws ResourceNotFoundException 사용자 정보가 없을 경우 예외 발생
      */
-    public void updateUserProfile(HttpServletRequest request, UserUpdateDTO userUpdateDTO, MultipartFile file) {
+    public void updateUserProfile(HttpServletRequest request, UserUpdateDTO userUpdateDTO, MultipartFile imagefile) {
         String userId = (String) request.getAttribute("userId");
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다.", "User not found"));
-
-        // 닉네임 업데이트
-        if (userUpdateDTO.getNickname() != null) {
-            user.setNickname(userUpdateDTO.getNickname());
-        }
 
         // 이메일 업데이트
         if (userUpdateDTO.getEmail() != null) {
             user.setEmail(userUpdateDTO.getEmail());
         }
 
-        // 파일이 있으면 디렉토리에 업로드 후 경로 설정
-        if (file != null && !file.isEmpty()) {
-            String fileName = saveFileToDirectory(file);
+        // 프로필 이미지 파일 업데이트
+        System.out.println("imagefile service:" + imagefile);
+        if (imagefile != null && !imagefile.isEmpty()) {
+            String fileName = saveFileToDirectory(imagefile);
+            System.out.println("imagefile fileName:" + imagefile);
             user.setProfileImagePath(fileName);
         }
 
@@ -105,20 +102,21 @@ public class UserService {
 
     /**
      * 파일을 로컬 디렉토리에 저장
-     * @param file 저장할 파일
+     * @param imagefile 저장할 파일
      * @return String 저장된 파일 경로
      * @throws RuntimeException 파일 저장 중 오류 발생 시 예외 처리
      */
-    private String saveFileToDirectory(MultipartFile file) {
+    private String saveFileToDirectory(MultipartFile imagefile) {
         try {
             // 고유한 파일 이름 생성 (UUID + 원래 파일명)
-            String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
-            Path filePath = Paths.get(uploadDir + "/" + fileName);
-            Files.createDirectories(filePath.getParent());                  // 저장 경로가 없으면 생성
-            Files.write(filePath, file.getBytes());                         // 파일 저장
-            return filePath.toString();                                     // 저장된 파일 경로 반환
+            String fileName = UUID.randomUUID().toString() + "-" + imagefile.getOriginalFilename();
+            Path imagefilePath = Paths.get(uploadDir + "/" + fileName);
+            Files.createDirectories(imagefilePath.getParent());                  // 저장 경로가 없으면 생성
+            Files.write(imagefilePath, imagefile.getBytes());                    // 파일 저장
+            System.out.println("imagefilePath:" + imagefilePath);
+            return fileName;                                                     // 저장된 파일 이름 반환
         } catch (IOException e) {
-            throw new RuntimeException("파일 저장에 실패했습니다.", e);           // 파일 저장 실패 시 예외 처리
+            throw new RuntimeException("파일 저장에 실패했습니다.", e);                // 파일 저장 실패 시 예외 처리
         }
     }
 }

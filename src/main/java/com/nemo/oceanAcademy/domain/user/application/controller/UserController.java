@@ -56,15 +56,18 @@ public class UserController {
      * 사용자 정보 업데이트
      * @param request 인증된 사용자 요청 객체
      * @param userUpdateDTO 업데이트할 사용자 정보
-     * @param file 업데이트할 프로필 이미지 파일 (선택)
+     * @param imagefile 업데이트할 프로필 이미지 파일 (선택)
      * @return ResponseEntity<String> 업데이트 결과 메시지
      */
-    @PatchMapping
+    @PatchMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> updateUserProfile(HttpServletRequest request,
-                                               @RequestBody UserUpdateDTO userUpdateDTO,
-                                               @RequestPart(value = "file", required = false) MultipartFile file) {
+                                               @RequestPart("userUpdateDTO") UserUpdateDTO userUpdateDTO,
+                                               @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
+
+        System.out.println("imagefile controller:" + imagefile);
         String userId = getAuthenticatedUserId(request);
-        userService.updateUserProfile(request, userUpdateDTO, file);
+        userService.updateUserProfile(request, userUpdateDTO, imagefile);
+        // TODO : 3개 중 하나 성공하면 그냥 성공 때림 ㄱ
         return ApiResponse.success("회원 정보가 수정되었습니다.", "User profile updated successfully", null);
     }
 
