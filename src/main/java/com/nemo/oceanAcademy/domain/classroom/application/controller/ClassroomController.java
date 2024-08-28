@@ -6,7 +6,7 @@ import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomDashboard
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomUpdateDto;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto;
 import com.nemo.oceanAcademy.domain.classroom.application.service.ClassroomService;
-import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
+import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantResponseDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -154,7 +154,9 @@ public class ClassroomController {
     @GetMapping("/{classId}/dashboard/students")
     public ResponseEntity<?> getClassroomStudents(HttpServletRequest request, @PathVariable Long classId) {
         String userId = getAuthenticatedUserId(request);
-        List<User> students = classroomService.getClassroomStudents(classId);
+
+        // 수강생 리스트를 가져와서 DTO로 변환 후 반환
+        List<ParticipantResponseDto> students = classroomService.getClassroomStudents(classId);
         return ApiResponse.success("수강생 목록 조회 성공", "Students retrieved successfully", students);
     }
 

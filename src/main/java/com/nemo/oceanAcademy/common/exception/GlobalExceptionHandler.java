@@ -28,6 +28,20 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
+    // 이미 가입된 사용자 예외 처리
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                ex.getMessageKor(),
+                ex.getMessageEng(),
+                HttpStatus.CONFLICT,  // 409 Conflict
+                "User Exists",
+                ex.getData()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+
     // 요청 데이터 유효성 검사 실패
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {

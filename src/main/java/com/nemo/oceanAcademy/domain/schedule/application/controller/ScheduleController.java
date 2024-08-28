@@ -69,14 +69,17 @@ public class ScheduleController {
     /**
      * 강의 일정 삭제
      * @param classId 강의 ID
-     * @param id 삭제할 일정 ID
+     * @param scheduleData 삭제할 일정 ID
      * @param request 인증된 사용자 정보 포함 요청 객체
      * @return ResponseEntity<Map<String, Object>> 삭제 결과
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteSchedule(HttpServletRequest request, @PathVariable Long classId, @PathVariable Long id) {
+    @DeleteMapping
+    public ResponseEntity<Map<String, Object>> deleteSchedule(HttpServletRequest request,
+                                                              @PathVariable Long classId,
+                                                              @RequestBody Map<String, Long> scheduleData) {
         String userId = getAuthenticatedUserId(request);
-        scheduleService.deleteSchedule(classId, id, userId);
+        Long scheduleIndex = scheduleData.get("schedule_id");
+        scheduleService.deleteSchedule(classId, scheduleIndex, userId);
         return ApiResponse.success("강의 일정 삭제 성공", "Schedule deleted successfully", null);
     }
 }

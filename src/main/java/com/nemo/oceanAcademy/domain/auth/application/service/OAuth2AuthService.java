@@ -2,6 +2,7 @@ package com.nemo.oceanAcademy.domain.auth.application.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
+import com.nemo.oceanAcademy.common.exception.UserAlreadyExistsException;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
@@ -32,7 +33,7 @@ public class OAuth2AuthService {
     private final KakaoConfig kakaoConfig;
 
     @Autowired
-    public OAuth2AuthService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider, KakaoConfig kakaoConfig) {
+    public OAuth2AuthService(UserRepository userRepository, KakaoConfig kakaoConfig) {
         this.userRepository = userRepository;
         this.kakaoConfig = kakaoConfig;
     }
@@ -113,7 +114,10 @@ public class OAuth2AuthService {
      */
     public void signup(String userId, String nickname, MultipartFile file) {
         if (userRepository.existsById(userId)) {
-            throw new RuntimeException("이미 가입된 사용자입니다.");
+            throw new UserAlreadyExistsException(
+                    "이미 가입된 사용자입니다.", // 한국어 메시지
+                    "User already exists."      // 영어 메시지
+            );
         }
 
         User user = new User();
@@ -122,6 +126,7 @@ public class OAuth2AuthService {
         user.setProfileImagePath(saveProfileImage(file));  // 프로필 이미지 저장
         userRepository.save(user);
     }
+
 
     /**
      * 회원탈퇴 처리 (soft delete)
