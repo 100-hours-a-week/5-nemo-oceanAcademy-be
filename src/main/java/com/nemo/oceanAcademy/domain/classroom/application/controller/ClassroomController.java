@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -69,16 +70,22 @@ public class ClassroomController {
     }
 
     /**
-     * 새로운 강의실 생성
+     * 새로운 강의실 생성 TODO:배너이미지
      * @param request            인증된 사용자 요청 객체
      * @param classroomCreateDto 생성할 강의실 정보
+     * @param imagefile 배너 이미지 파일
      * @return ResponseEntity<ClassroomResponseDto> 생성된 강의실 정보
      */
     @PostMapping
-    public ResponseEntity<?> createClassroom(HttpServletRequest request, @Valid @RequestBody ClassroomCreateDto classroomCreateDto) {
+    public ResponseEntity<?> createClassroom(HttpServletRequest request,
+                                             @Valid @RequestPart ClassroomCreateDto classroomCreateDto,
+                                             @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
+
         String userId = getAuthenticatedUserId(request);
+        System.out.println("imagefile Banner controller:" + imagefile);
+
         classroomCreateDto.setUserId(userId);
-        ClassroomResponseDto createdClassroom = classroomService.createClassroom(classroomCreateDto);
+        ClassroomResponseDto createdClassroom = classroomService.createClassroom(classroomCreateDto, imagefile);
         return ApiResponse.success("강의실 생성 성공", "Classroom created successfully", createdClassroom);
     }
 
@@ -107,24 +114,28 @@ public class ClassroomController {
     }
 
     /**
-     * 강의실 정보 업데이트
+     * 강의실 정보 업데이트 TODO:배너이미지
      * @param request            인증된 사용자 요청 객체
      * @param classId            강의실 ID
      * @param classroomUpdateDto 업데이트할 정보
+     * @param imagefile 배너 이미지 파일
      * @return ResponseEntity<ClassroomResponseDto> 업데이트된 강의실 정보
      */
     @PatchMapping("/{classId}")
-    public ResponseEntity<?> updateClassroom(HttpServletRequest request, @PathVariable Long classId, @Valid @RequestBody ClassroomUpdateDto classroomUpdateDto) {
+    public ResponseEntity<?> updateClassroom(HttpServletRequest request,
+                                             @PathVariable Long classId,
+                                             @Valid @RequestPart("classroomUpdateDto") ClassroomUpdateDto classroomUpdateDto,
+                                             @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
+
         String userId = getAuthenticatedUserId(request);
         String role = classroomService.getUserRoleInClassroom(classId, userId);
         System.out.println("role: " + role);
+        System.out.println("imagefile controller:" + imagefile);
 
         // 강사만 접근 가능
-        if (!role.equals("강사")) {
-            throw new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
-        }
+        if (!role.equals("강사")) { throw new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied"); }
 
-        ClassroomResponseDto updatedClassroom = classroomService.updateClassroom(classId, classroomUpdateDto);
+        ClassroomResponseDto updatedClassroom = classroomService.updateClassroom(classId, classroomUpdateDto, imagefile);
         return ApiResponse.success("강의실 정보 업데이트 성공", "Classroom updated successfully", updatedClassroom);
     }
 
