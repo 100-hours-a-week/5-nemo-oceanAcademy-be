@@ -3,12 +3,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
 import com.nemo.oceanAcademy.common.exception.UserAlreadyExistsException;
-import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
+import com.nemo.oceanAcademy.domain.auth.application.dto.SignupRequestDto;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import io.sentry.Sentry;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -32,6 +34,9 @@ public class OAuth2AuthService {
 
     private final UserRepository userRepository;
     private final KakaoConfig kakaoConfig;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     @Autowired
     public OAuth2AuthService(UserRepository userRepository, KakaoConfig kakaoConfig) {
@@ -110,26 +115,38 @@ public class OAuth2AuthService {
 
     /**
      * 회원가입 신청
-     * @param userId 사용자 ID
-     * @param nickname 사용자 닉네임
-     * @param file 프로필 이미지 파일 (선택)
+     * @param request 사용자 ID
+     * @param signupRequestDto 사용자 닉네임
+     * @param imagefile 프로필 이미지 파일 (선택)
      * @throws RuntimeException 이미 가입된 사용자가 있을 경우 예외 발생
      */
-    public void signup(String userId, String nickname, MultipartFile file) {
+    public void signup(HttpServletRequest request, SignupRequestDto signupRequestDto, MultipartFile imagefile) {
+        String userId = (String) request.getAttribute("userId");
+
+        // 기존 유저가 존재하는지 확인
         if (userRepository.existsById(userId)) {
-            throw new UserAlreadyExistsException(
-                    "이미 가입된 사용자입니다.", // 한국어 메시지
-                    "User already exists."      // 영어 메시지
-            );
+            throw new UserAlreadyExistsException("이미 가입된 사용자입니다.", "User already exists.");
         }
 
+        // 새로운 User 객체 생성 및 정보 설정
         User user = new User();
         user.setId(userId);
-        user.setNickname(nickname);
-        user.setProfileImagePath(saveProfileImage(file));  // 프로필 이미지 저장
+        user.setNickname(signupRequestDto.getNickname());
+
+        // 이메일 업데이트
+        if (signupRequestDto.getEmail() != null) {
+            user.setEmail(signupRequestDto.getEmail());
+        }
+
+        // 프로필 이미지 파일 업데이트
+        if (imagefile != null && !imagefile.isEmpty()) {
+            String fileName = saveFileToDirectory(imagefile);
+            user.setProfileImagePath(fileName);
+        }
+
+        // 유저 정보 저장
         userRepository.save(user);
     }
-
 
     /**
      * 회원탈퇴 처리 (soft delete)
@@ -144,22 +161,22 @@ public class OAuth2AuthService {
     }
 
     /**
-     * 프로필 이미지 저장 로직
-     * @param file 저장할 파일
-     * @return 저장된 파일 경로 또는 null
+     * 파일을 로컬 디렉토리에 저장
+     * @param imagefile 저장할 파일
+     * @return String 저장된 파일 경로
+     * @throws RuntimeException 파일 저장 중 오류 발생 시 예외 처리
      */
-    private String saveProfileImage(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
+    private String saveFileToDirectory(MultipartFile imagefile) {
         try {
-            String fileName = UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
-            Path filePath = Paths.get("uploads/" + fileName);
-            Files.createDirectories(filePath.getParent());
-            Files.write(filePath, file.getBytes());
-            return filePath.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("프로필 이미지 저장에 실패했습니다.", e);
+            // 고유한 파일 이름 생성 (UUID + 원래 파일명)
+            String fileName = UUID.randomUUID().toString() + "-" + imagefile.getOriginalFilename();
+            Path imagefilePath = Paths.get(uploadDir + "/" + fileName);
+            Files.createDirectories(imagefilePath.getParent());                  // 저장 경로가 없으면 생성
+            Files.write(imagefilePath, imagefile.getBytes());                    // 파일 저장
+            System.out.println("imagefilePath:" + imagefilePath);
+            return fileName;                                                     // 저장된 파일 이름 반환
+        } catch (IOException e) {
+            throw new RuntimeException("파일 저장에 실패했습니다.", e);                // 파일 저장 실패 시 예외 처리
         }
     }
 }

@@ -65,9 +65,9 @@ public class UserController {
                                                @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
 
         System.out.println("imagefile controller:" + imagefile);
-        String userId = getAuthenticatedUserId(request);
-        userService.updateUserProfile(request, userUpdateDTO, imagefile);
+
         // TODO : 3개 중 하나 성공하면 그냥 성공 때림 ㄱ
+        userService.updateUserProfile(request, userUpdateDTO, imagefile);
         return ApiResponse.success("회원 정보가 수정되었습니다.", "User profile updated successfully", null);
     }
 
