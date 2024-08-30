@@ -7,6 +7,7 @@ import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
+import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -58,6 +59,7 @@ public class OAuth2AuthService {
             JsonNode root = mapper.readTree(responseBody);
             return root.path("access_token").asText();
         } catch (IOException e) {
+            Sentry.captureException(e);
             throw new RuntimeException("엑세스 토큰 추출에 실패", e);
         }
     }
@@ -68,6 +70,7 @@ public class OAuth2AuthService {
             String successRedirectUri = kakaoConfig.getRedirectUri();
             response.sendRedirect(successRedirectUri);
         } catch (IOException e) {
+            Sentry.captureException(e);
             throw new RuntimeException("로그인 성공, 리다이렉트 안됨", e);
         }
     }

@@ -12,6 +12,7 @@ import com.nemo.oceanAcademy.domain.schedule.dataAccess.repository.ScheduleRepos
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
+import io.sentry.Sentry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -106,7 +107,14 @@ public class ClassroomService {
     // 강의실 정보 업데이트
     public ClassroomResponseDto updateClassroom(Long classId, ClassroomUpdateDto classroomUpdateDto) {
         Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
+                .orElseThrow(() -> {
+                    ResourceNotFoundException exception = new ResourceNotFoundException(
+                            "해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.",
+                            "Classroom not found"
+                    );
+                    Sentry.captureException(exception);
+                    return exception;
+                });
 
         if (classroomUpdateDto.getName() != null) classroom.setName(classroomUpdateDto.getName());
         if (classroomUpdateDto.getObject() != null) classroom.setObject(classroomUpdateDto.getObject());
@@ -169,29 +177,52 @@ public class ClassroomService {
                 .collect(Collectors.toList());
     }
 
-    // 강의실 대시보드 정보 및 스케줄 가져오기
     public ClassroomDashboardDto getClassroomDashboard(Long classId, String userId) {
-        Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
-        String role = getUserRoleInClassroom(classId, userId);
-        List<ScheduleDto> schedules = scheduleRepository.findSchedulesByClassroomId(classId);
+        try {
+            Classroom classroom = classroomRepository.findById(classId)
+                    .orElseThrow(() -> {
+                        ResourceNotFoundException exception = new ResourceNotFoundException(
+                                "해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.",
+                                "Classroom not found"
+                        );
 
-        return ClassroomDashboardDto.builder()
-                .id(classroom.getId())
-                .userId(classroom.getUser().getId())
-                .categoryId(classroom.getCategory().getId())
-                .name(classroom.getName())
-                .object(classroom.getObject())
-                .description(classroom.getDescription())
-                .instructorInfo(classroom.getInstructorInfo())
-                .prerequisite(classroom.getPrerequisite())
-                .announcement(classroom.getAnnouncement())
-                .bannerImagePath(classroom.getBannerImagePath())
-                .isActive(classroom.getIsActive())
-                .role(role)
-                .schedules(schedules)
-                .build();
+                        // Sentry에 예외 캡처와 함께 추가 정보 설정
+                        Sentry.withScope(scope -> {
+                            scope.setTag("classroom_id", classId.toString());
+                            scope.setTag("user_id", userId);
+                            scope.setExtra("error_type", "Classroom Not Found");
+                            Sentry.captureException(exception);
+                        });
+
+                        return exception;
+                    });
+
+            String role = getUserRoleInClassroom(classId, userId);
+            List<ScheduleDto> schedules = scheduleRepository.findSchedulesByClassroomId(classId);
+
+            return ClassroomDashboardDto.builder()
+                    .id(classroom.getId())
+                    .userId(classroom.getUser().getId())
+                    .categoryId(classroom.getCategory().getId())
+                    .name(classroom.getName())
+                    .object(classroom.getObject())
+                    .description(classroom.getDescription())
+                    .instructorInfo(classroom.getInstructorInfo())
+                    .prerequisite(classroom.getPrerequisite())
+                    .announcement(classroom.getAnnouncement())
+                    .bannerImagePath(classroom.getBannerImagePath())
+                    .isActive(classroom.getIsActive())
+                    .role(role)
+                    .schedules(schedules)
+                    .build();
+
+        } catch (Exception e) {
+            // 예외 처리
+            Sentry.captureException(e);
+            throw e;
+        }
     }
+
 
     // 수강 신청
     public void enrollParticipant(String userId, Long classId) {
