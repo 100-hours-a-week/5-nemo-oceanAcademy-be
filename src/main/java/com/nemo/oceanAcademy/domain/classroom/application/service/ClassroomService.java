@@ -13,12 +13,19 @@ import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +37,9 @@ public class ClassroomService {
     private final ParticipantRepository participantRepository;
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     // 공통 변환 메서드
     private ClassroomResponseDto toClassroomResponseDto(Classroom classroom) {
@@ -79,8 +89,9 @@ public class ClassroomService {
                 : getAllClassrooms();
     }
 
-    // 새로운 강의 생성
-    public ClassroomResponseDto createClassroom(ClassroomCreateDto classroomCreateDto) {
+    // 새로운 강의 생성 TODO:배너이미지
+    public ClassroomResponseDto createClassroom(ClassroomCreateDto classroomCreateDto, MultipartFile imagefile) {
+
         Category category = categoryRepository.findById(classroomCreateDto.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("해당하는 카테고리를 찾을 수 없습니다.", "Category not found"));
         User user = userRepository.findById(classroomCreateDto.getUserId())
@@ -95,19 +106,27 @@ public class ClassroomService {
                 .instructorInfo(classroomCreateDto.getInstructorInfo())
                 .prerequisite(classroomCreateDto.getPrerequisite())
                 .announcement(classroomCreateDto.getAnnouncement())
-                .bannerImagePath(classroomCreateDto.getBannerImagePath())
                 .isActive(false)
                 .build();
+
+        // 배너 이미지 파일 업데이트
+        System.out.println("imagefile service:" + imagefile);
+        if (imagefile != null && !imagefile.isEmpty()) {
+            String fileName = saveFileToDirectory(imagefile);
+            System.out.println("imagefile fileName:" + imagefile);
+            classroom.setBannerImagePath(fileName);
+        }
 
         classroomRepository.save(classroom);
         return toClassroomResponseDto(classroom);
     }
 
-    // 강의실 정보 업데이트
-    public ClassroomResponseDto updateClassroom(Long classId, ClassroomUpdateDto classroomUpdateDto) {
+    // 강의실 정보 업데이트 TODO:배너이미지
+    public ClassroomResponseDto updateClassroom(Long classId, ClassroomUpdateDto classroomUpdateDto, MultipartFile imagefile) {
         Classroom classroom = classroomRepository.findById(classId)
                 .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
 
+        // 업데이트
         if (classroomUpdateDto.getName() != null) classroom.setName(classroomUpdateDto.getName());
         if (classroomUpdateDto.getObject() != null) classroom.setObject(classroomUpdateDto.getObject());
         if (classroomUpdateDto.getDescription() != null) classroom.setDescription(classroomUpdateDto.getDescription());
@@ -115,7 +134,14 @@ public class ClassroomService {
         if (classroomUpdateDto.getInstructorInfo() != null) classroom.setInstructorInfo(classroomUpdateDto.getInstructorInfo());
         if (classroomUpdateDto.getPrerequisite() != null) classroom.setPrerequisite(classroomUpdateDto.getPrerequisite());
         if (classroomUpdateDto.getAnnouncement() != null) classroom.setAnnouncement(classroomUpdateDto.getAnnouncement());
-        if (classroomUpdateDto.getBannerImagePath() != null) classroom.setBannerImagePath(classroomUpdateDto.getBannerImagePath());
+
+        // 배너 이미지 파일 업데이트
+        System.out.println("imagefile service:" + imagefile);
+        if (imagefile != null && !imagefile.isEmpty()) {
+            String fileName = saveFileToDirectory(imagefile);
+            System.out.println("imagefile fileName:" + imagefile);
+            classroom.setBannerImagePath(fileName);
+        }
 
         classroomRepository.save(classroom);
         return toClassroomResponseDto(classroom);
@@ -135,6 +161,28 @@ public class ClassroomService {
         classroom.setDeletedAt(LocalDateTime.now());
         classroomRepository.save(classroom);
     }
+
+    /**
+     * 파일을 로컬 디렉토리에 저장
+     * @param imagefile 저장할 파일
+     * @return String 저장된 파일 경로
+     * @throws RuntimeException 파일 저장 중 오류 발생 시 예외 처리
+     */
+    private String saveFileToDirectory(MultipartFile imagefile) {
+        try {
+            // 고유한 파일 이름 생성 (UUID + 원래 파일명)
+            String fileName = UUID.randomUUID().toString() + "-" + imagefile.getOriginalFilename();
+            Path imagefilePath = Paths.get(uploadDir + "/" + fileName);
+            Files.createDirectories(imagefilePath.getParent());                  // 저장 경로가 없으면 생성
+            Files.write(imagefilePath, imagefile.getBytes());                    // 파일 저장
+            System.out.println("imagefilePath:" + imagefilePath);
+            return fileName;                                                     // 저장된 파일 이름 반환
+        } catch (IOException e) {
+            throw new RuntimeException("파일 저장에 실패했습니다.", e);                // 파일 저장 실패 시 예외 처리
+        }
+    }
+
+    /*----------------------------------------------------------------------------------*/
 
     // 사용자의 강의실 역할 확인
     public String getUserRoleInClassroom(Long classId, String userId) {
@@ -192,6 +240,7 @@ public class ClassroomService {
                 .schedules(schedules)
                 .build();
     }
+    /*----------------------------------------------------------------------------------*/
 
     // 수강 신청
     public void enrollParticipant(String userId, Long classId) {

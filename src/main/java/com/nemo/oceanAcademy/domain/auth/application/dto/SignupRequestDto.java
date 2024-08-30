@@ -1,13 +1,9 @@
 package com.nemo.oceanAcademy.domain.auth.application.dto;
+
+import lombok.Data;
+
+@Data
 public class SignupRequestDto {
     private String nickname;
-
-    // Getter, Setter
-    public String getNickname() {
-        return nickname;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
+    private String email;
 }
