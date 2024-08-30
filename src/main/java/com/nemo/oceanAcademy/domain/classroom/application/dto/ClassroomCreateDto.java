@@ -46,10 +46,6 @@ public class ClassroomCreateDto {
     @JsonProperty("announcement")
     private String announcement;
 
-    // 강의 배너 이미지 경로 (선택)
-    @JsonProperty("bannerImagePath")
-    private String bannerImagePath;
-
     // 강의실 활성화 여부 (선택)
     @JsonProperty("isActive")
     private Boolean isActive;

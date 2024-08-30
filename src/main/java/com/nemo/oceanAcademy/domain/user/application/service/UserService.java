@@ -75,10 +75,9 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다.", "User not found"));
 
-        // 이메일 업데이트
-        if (userUpdateDTO.getEmail() != null) {
-            user.setEmail(userUpdateDTO.getEmail());
-        }
+        // 사용자 정보 업데이트
+        if (userUpdateDTO.getNickname() != null) { user.setNickname(userUpdateDTO.getNickname()); }
+        if (userUpdateDTO.getEmail() != null) { user.setEmail(userUpdateDTO.getEmail()); }
 
         // 프로필 이미지 파일 업데이트
         System.out.println("imagefile service:" + imagefile);
