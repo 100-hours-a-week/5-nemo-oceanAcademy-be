@@ -5,6 +5,7 @@ import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserCreateDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserResponseDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
+import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,9 +39,17 @@ public class UserService {
      * @throws ResourceNotFoundException 사용자 정보가 없을 경우 예외 발생
      */
     public UserResponseDTO getUserInfo(String userId) {
-        return userRepository.findById(userId)
-                .map(user -> new UserResponseDTO(user.getNickname(), user.getEmail(), user.getProfileImagePath()))
-                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + userId + ") 사용자를 찾을 수 없습니다.", "User not found"));
+        try {
+            return userRepository.findById(userId)
+                    .map(user -> new UserResponseDTO(user.getNickname(), user.getEmail(), user.getProfileImagePath()))
+                    .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + userId + ") 사용자를 찾을 수 없습니다.", "User not found"));
+        } catch (ResourceNotFoundException e) {
+            Sentry.captureException(e);
+            throw e;
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("사용자 정보 조회 중 오류가 발생했습니다.", e);
+        }
     }
 
     /**
@@ -49,18 +58,26 @@ public class UserService {
      * @throws ResourceNotFoundException 이미 존재하는 사용자 ID일 경우 예외 발생
      */
     public void createUser(UserCreateDTO userCreateDTO) {
-        if (userRepository.existsById(userCreateDTO.getUserId())) {
-            throw new ResourceNotFoundException("해당 ID의 사용자가 이미 존재합니다.", "User already exists with ID: " + userCreateDTO.getUserId());
+        try {
+            if (userRepository.existsById(userCreateDTO.getUserId())) {
+                throw new ResourceNotFoundException("해당 ID의 사용자가 이미 존재합니다.", "User already exists with ID: " + userCreateDTO.getUserId());
+            }
+
+            User user = User.builder()
+                    .id(userCreateDTO.getUserId()) // 카카오 UUID 사용
+                    .nickname(userCreateDTO.getNickname())
+                    .email(userCreateDTO.getEmail())
+                    .profileImagePath(userCreateDTO.getProfileImagePath())
+                    .build();
+
+            userRepository.save(user);
+        } catch (ResourceNotFoundException e) {
+            Sentry.captureException(e);
+            throw e;
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("사용자 생성 중 오류가 발생했습니다.", e);
         }
-
-        User user = User.builder()
-                .id(userCreateDTO.getUserId()) // 카카오 UUID 사용
-                .nickname(userCreateDTO.getNickname())
-                .email(userCreateDTO.getEmail())
-                .profileImagePath(userCreateDTO.getProfileImagePath())
-                .build();
-
-        userRepository.save(user);
     }
 
     /**
@@ -71,23 +88,33 @@ public class UserService {
      * @throws ResourceNotFoundException 사용자 정보가 없을 경우 예외 발생
      */
     public void updateUserProfile(HttpServletRequest request, UserUpdateDTO userUpdateDTO, MultipartFile imagefile) {
-        String userId = (String) request.getAttribute("userId");
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다.", "User not found"));
+        try {
+            String userId = (String) request.getAttribute("userId");
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다.", "User not found"));
 
-        // 사용자 정보 업데이트
-        if (userUpdateDTO.getNickname() != null) { user.setNickname(userUpdateDTO.getNickname()); }
-        if (userUpdateDTO.getEmail() != null) { user.setEmail(userUpdateDTO.getEmail()); }
+            // 사용자 정보 업데이트
+            if (userUpdateDTO.getNickname() != null) {
+                user.setNickname(userUpdateDTO.getNickname());
+            }
+            if (userUpdateDTO.getEmail() != null) {
+                user.setEmail(userUpdateDTO.getEmail());
+            }
 
-        // 프로필 이미지 파일 업데이트
-        System.out.println("imagefile service:" + imagefile);
-        if (imagefile != null && !imagefile.isEmpty()) {
-            String fileName = saveFileToDirectory(imagefile);
-            System.out.println("imagefile fileName:" + imagefile);
-            user.setProfileImagePath(fileName);
+            // 프로필 이미지 파일 업데이트
+            if (imagefile != null && !imagefile.isEmpty()) {
+                String fileName = saveFileToDirectory(imagefile);
+                user.setProfileImagePath(fileName);
+            }
+
+            userRepository.save(user); // 수정된 사용자 정보 저장
+        } catch (ResourceNotFoundException e) {
+            Sentry.captureException(e);
+            throw e;
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("사용자 정보 업데이트 중 오류가 발생했습니다.", e);
         }
-
-        userRepository.save(user); // 수정된 사용자 정보 저장
     }
 
     /**
@@ -96,7 +123,12 @@ public class UserService {
      * @return boolean 중복이 없으면 true 반환
      */
     public boolean isNicknameAvailable(String nickname) {
-        return !userRepository.existsByNickname(nickname); // 닉네임 중복 확인
+        try {
+            return !userRepository.existsByNickname(nickname); // 닉네임 중복 확인
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("닉네임 중복 확인 중 오류가 발생했습니다.", e);
+        }
     }
 
     /**
@@ -112,9 +144,9 @@ public class UserService {
             Path imagefilePath = Paths.get(uploadDir + "/" + fileName);
             Files.createDirectories(imagefilePath.getParent());                  // 저장 경로가 없으면 생성
             Files.write(imagefilePath, imagefile.getBytes());                    // 파일 저장
-            System.out.println("imagefilePath:" + imagefilePath);
             return fileName;                                                     // 저장된 파일 이름 반환
         } catch (IOException e) {
+            Sentry.captureException(e);
             throw new RuntimeException("파일 저장에 실패했습니다.", e);                // 파일 저장 실패 시 예외 처리
         }
     }
