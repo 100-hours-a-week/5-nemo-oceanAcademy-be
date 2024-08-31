@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.common.exception;
+import com.nemo.oceanAcademy.common.response.ApiResponse;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -132,6 +133,19 @@ public class GlobalExceptionHandler {
                 "error"
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // JWT 인증 실패 예외 처리
+    @ExceptionHandler(JwtAuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleJwtAuthenticationException(JwtAuthenticationException ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                ex.getMessageKor(),
+                ex.getMessageEng(),
+                HttpStatus.UNAUTHORIZED,
+                "Unauthorized",
+                null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
     // 공통 응답 생성 메서드 (한국어 + 영어 메시지 모두 지원)

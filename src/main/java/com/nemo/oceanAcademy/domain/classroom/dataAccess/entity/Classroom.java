@@ -81,6 +81,7 @@ public class Classroom {
     private String bannerImagePath;
 
     //강의실 라이브 강의 활성화 여부
+    @Builder.Default
     @Column(nullable = false, name = "is_active")
     private Boolean isActive = false;
 

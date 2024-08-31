@@ -1,13 +1,15 @@
 package com.nemo.oceanAcademy.domain.auth.security;
-
+import io.jsonwebtoken.ExpiredJwtException;
+import io.sentry.Sentry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.nemo.oceanAcademy.common.exception.JwtAuthenticationException;
 
 import java.io.IOException;
 
@@ -20,43 +22,76 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    // 필터 체인
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 토큰 가져오기
         String token = resolveToken(request);
 
-        // 토큰 유효성 검증
-        if (token != null && jwtTokenProvider.validateToken(token)) {
+        try {
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                // 토큰 유효성 확인 및 사용자 정보 추출
+                String userId = jwtTokenProvider.getUserIdFromToken(token);
+                logger.info("User ID from token: {}", userId);
 
-            // UserId 추출
-            String userId = jwtTokenProvider.getUserIdFromToken(token);
-            logger.info("User ID from token: {}", userId);
+                request.setAttribute("userId", userId);
+                jwtTokenProvider.setAuthentication(token);
+            }
+        } catch (ExpiredJwtException e) {
+            // AccessToken이 만료된 경우
+            logger.info("Access token expired, checking refresh token");
+            String refreshToken = resolveRefreshToken(request);
 
-            // request에 userId 추가
-            request.setAttribute("userId", userId);
-            logger.info("User ID set in request attribute: {}", userId);
+            try {
+                if (refreshToken != null && jwtTokenProvider.validateToken(refreshToken)) {
+                    String userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+                    String newAccessToken = jwtTokenProvider.createAccessToken(userId);
 
-            // SecurityContext에 Authentication 설정
-            jwtTokenProvider.setAuthentication(token);
+                    // 새로운 accessToken을 응답 헤더에 추가
+                    response.setHeader("Authorization", "Bearer " + newAccessToken);
 
-            // 토큰 및 사용자 정보 출력
-            logger.info("Extracted token: {}", token);
-            logger.info("User ID from SecurityContext: {}", SecurityContextHolder.getContext().getAuthentication().getName());
+                    // 사용자 정보를 request에 설정 및 SecurityContext에 설정
+                    request.setAttribute("userId", userId);
+                    jwtTokenProvider.setAuthentication(newAccessToken);
+
+                    logger.info("New access token generated and set in response header.");
+                } else {
+                    throw new JwtAuthenticationException(
+                            "리프레시 토큰이 유효하지 않거나 만료되었습니다.",
+                            "Refresh token is invalid or expired."
+                    );
+                }
+            } catch (Exception ex) {
+                Sentry.captureException(ex);
+                throw new JwtAuthenticationException(
+                        "리프레시 토큰 처리 중 오류가 발생했습니다.",
+                        "Error processing refresh token."
+                );
+            }
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new JwtAuthenticationException(
+                    "JWT 처리 중 예상치 못한 오류가 발생했습니다.",
+                    "Unexpected error occurred during JWT processing."
+            );
         }
 
-        // 필터 체인 계속..
         filterChain.doFilter(request, response);
 
-        // 필터가 정상적으로 통과된 후
-        logger.info("필터 통과 후 요청 처리 완료: {}", request.getRequestURI());
-        logger.info("응답 상태 코드: {}", response.getStatus());
+        logger.info("Request processed successfully: {}", request.getRequestURI());
+        logger.info("Response status code: {}", response.getStatus());
     }
 
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+
+    private String resolveRefreshToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Refresh-Token");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
