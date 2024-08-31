@@ -2,6 +2,7 @@ package com.nemo.oceanAcademy.domain.category.application.service;
 import com.nemo.oceanAcademy.domain.category.dataAccess.entity.Category;
 import com.nemo.oceanAcademy.domain.category.dataAccess.repository.CategoryRepository;
 import com.nemo.oceanAcademy.domain.category.application.dto.CategoryDto;
+import io.sentry.Sentry;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,13 +27,18 @@ public class CategoryService {
      * @return List<CategoryDto> 전체 카테고리 목록
      */
     public List<CategoryDto> getAllCategories() {
-        // DB에서 모든 카테고리를 조회
-        List<Category> categories = categoryRepository.findAll();
+        try {
+            // DB에서 모든 카테고리를 조회
+            List<Category> categories = categoryRepository.findAll();
 
-        // 엔티티를 DTO로 변환하여 반환
-        return categories.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+            // 엔티티를 DTO로 변환하여 반환
+            return categories.stream()
+                    .map(this::convertToDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("카테고리 목록 조회 중 오류가 발생했습니다.", e);
+        }
     }
 
     /**
