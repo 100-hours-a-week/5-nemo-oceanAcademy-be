@@ -22,6 +22,9 @@ jobs:
       - name: Set up Sentry Auth Token
         run: echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> $GITHUB_ENV
 
+      - name: Enable Sentry CLI Debug Logs
+        run: echo "SENTRY_LOG_LEVEL=debug" >> $GITHUB_ENV
+
       - name: Build with Gradle
         run: ./gradlew clean build
         env:
