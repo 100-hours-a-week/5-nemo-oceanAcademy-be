@@ -30,7 +30,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ktb-0402
-          SENTRY_PROJECT: 4507864932352000
+          SENTRY_PROJECT: spring-rest-api
 
       - name: Docker Hub에 로그인
         uses: docker/login-action@v2
