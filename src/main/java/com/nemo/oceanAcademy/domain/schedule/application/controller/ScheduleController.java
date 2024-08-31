@@ -5,6 +5,7 @@ import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.domain.classroom.application.service.ClassroomService;
 import com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto;
 import com.nemo.oceanAcademy.domain.schedule.application.service.ScheduleService;
+import io.sentry.Sentry;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,10 +35,12 @@ public class ScheduleController {
     private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
-            throw new UnauthorizedException(
-                    "사용자 인증에 실패했습니다. (토큰 없음)",
-                    "Unauthorized request: userId not found"
+            UnauthorizedException exception = new UnauthorizedException(
+                "사용자 인증에 실패했습니다. (토큰 없음)",
+                "Unauthorized request: userId not found"
             );
+            Sentry.captureException(exception);
+            throw exception;
         }
         return userId;
     }
@@ -54,9 +57,10 @@ public class ScheduleController {
         String role = classroomService.getUserRoleInClassroom(classId, userId);
         System.out.println("role: " + role);
 
-        // 수강생이나 강사만 접근 가능
         if (role.equals("관계없음")) {
-            throw new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
         }
 
         List<ScheduleDto> schedules = scheduleService.getSchedulesByClassId(classId, userId);
@@ -78,7 +82,9 @@ public class ScheduleController {
 
         // 강사만 접근 가능
         if (!role.equals("강사")) {
-            throw new RoleUnauthorizedException("해당 강의 일정을 생성할 권한이 없습니다.", "Access denied");
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
         }
         ScheduleDto createdSchedule = scheduleService.createSchedule(classId, scheduleDto, userId);
         return ApiResponse.success("강의 일정 생성 성공", "Schedule created successfully", createdSchedule);
@@ -101,7 +107,9 @@ public class ScheduleController {
 
         // 강사만 접근 가능
         if (!role.equals("강사")) {
-            throw new RoleUnauthorizedException("해당 강의 일정을 삭제할 권한이 없습니다.", "Access denied");
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
         }
         Long scheduleIndex = scheduleData.get("schedule_id");
         scheduleService.deleteSchedule(classId, scheduleIndex, userId);

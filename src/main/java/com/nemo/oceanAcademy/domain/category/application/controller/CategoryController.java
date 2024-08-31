@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.category.application.controller;
-
 import com.nemo.oceanAcademy.domain.category.application.dto.CategoryDto;
 import com.nemo.oceanAcademy.domain.category.application.service.CategoryService;
 import lombok.RequiredArgsConstructor;

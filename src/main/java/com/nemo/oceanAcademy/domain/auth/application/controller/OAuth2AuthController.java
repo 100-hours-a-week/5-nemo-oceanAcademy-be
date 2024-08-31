@@ -6,7 +6,9 @@ import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
+import io.sentry.Sentry;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,9 +35,14 @@ public class OAuth2AuthController {
      */
     @GetMapping("/kakao/app-key")
     public ResponseEntity<Map<String, String>> getKakaoAppKey() {
-        Map<String, String> response = new HashMap<>();
-        response.put("appKey", kakaoConfig.getKakaoClientId());
-        return ResponseEntity.ok(response);
+        try {
+            Map<String, String> response = new HashMap<>();
+            response.put("appKey", kakaoConfig.getKakaoClientId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     /**
@@ -45,21 +52,28 @@ public class OAuth2AuthController {
      */
     @GetMapping("/kakao/callback")
     public ResponseEntity<Map<String, String>> kakaoLogin(@RequestParam("code") String code) {
-        String kakaoAccessToken = authService.getKakaoAccessToken(code);
-        Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
+        try {
+            // 카카오 액세스 토큰 요청 및 사용자 정보 가져오기
+            String kakaoAccessToken = authService.getKakaoAccessToken(code);
+            Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
 
-        // 사용자 식별값 추출
-        String userId = (String) kakaoUserInfo.get("id");
+            // 사용자 식별값 추출
+            String userId = (String) kakaoUserInfo.get("id");
 
-        // JWT 액세스 토큰, 리프레시 토큰 생성
-        String accessToken = jwtTokenProvider.createAccessToken(userId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+            // JWT 액세스 토큰, 리프레시 토큰 생성
+            String accessToken = jwtTokenProvider.createAccessToken(userId);
+            String refreshToken = jwtTokenProvider.createRefreshToken(userId);
 
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put("accessToken", accessToken);
-        tokens.put("refreshToken", refreshToken);
+            // 토큰 응답 생성
+            Map<String, String> tokens = new HashMap<>();
+            tokens.put("accessToken", accessToken);
+            tokens.put("refreshToken", refreshToken);
 
-        return ResponseEntity.ok(tokens);
+            return ResponseEntity.ok(tokens);
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     /* ----------------------------------------------------------------- */
@@ -73,10 +87,12 @@ public class OAuth2AuthController {
     private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
-            throw new UnauthorizedException(
+            UnauthorizedException exception = new UnauthorizedException(
                     "사용자 인증에 실패했습니다. (토큰 없음)",
                     "Unauthorized request: userId not found"
             );
+            Sentry.captureException(exception);
+            throw exception;
         }
         return userId;
     }
