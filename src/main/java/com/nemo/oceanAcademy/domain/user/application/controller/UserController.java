@@ -5,6 +5,7 @@ import com.nemo.oceanAcademy.common.response.ErrorResponse;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserResponseDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
 import com.nemo.oceanAcademy.domain.user.application.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +62,7 @@ public class UserController {
      */
     @PatchMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> updateUserProfile(HttpServletRequest request,
-                                               @RequestPart("userUpdateDTO") UserUpdateDTO userUpdateDTO,
+                                               @Valid @RequestPart("userUpdateDTO") UserUpdateDTO userUpdateDTO,
                                                @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
 
         System.out.println("imagefile controller:" + imagefile);
