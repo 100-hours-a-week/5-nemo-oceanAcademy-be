@@ -5,8 +5,8 @@ import com.nemo.oceanAcademy.domain.auth.application.dto.SignupRequestDto;
 import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
-import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
 import io.sentry.Sentry;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -118,7 +118,7 @@ public class OAuth2AuthController {
      */
     @PostMapping("/signup")
     public ResponseEntity<?> signup(HttpServletRequest request,
-                                    @RequestPart("signupRequestDto") SignupRequestDto signupRequestDto,
+                                    @Valid @RequestPart("signupRequestDto") SignupRequestDto signupRequestDto,
                                     @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
 
         authService.signup(request, signupRequestDto, imagefile);
