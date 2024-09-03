@@ -5,6 +5,7 @@ import com.nemo.oceanAcademy.domain.chat.dataAccess.entity.Chat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +38,7 @@ public class ChatController {
      * @return Mono<Void>  처리 완료를 나타내는 Mono
      */
     @MessageMapping("/hello") // /app/hello 로 들어감
+    @SendTo("/topic/messages")
     public Mono<Void> receiveMessage(Chat chat) {
         System.out.println(chat);
         return chatService.saveChatMessage(chat).flatMap(savedMessage -> {
