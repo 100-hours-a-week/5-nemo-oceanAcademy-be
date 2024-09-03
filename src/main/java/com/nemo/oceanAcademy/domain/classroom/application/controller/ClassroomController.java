@@ -83,7 +83,7 @@ public class ClassroomController {
      */
     @PostMapping
     public ResponseEntity<?> createClassroom(HttpServletRequest request,
-                                             @Valid @RequestPart ClassroomCreateDto classroomCreateDto,
+                                             @Valid @RequestPart("classroomCreateDto") ClassroomCreateDto classroomCreateDto,
                                              @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
 
         String userId = getAuthenticatedUserId(request);
