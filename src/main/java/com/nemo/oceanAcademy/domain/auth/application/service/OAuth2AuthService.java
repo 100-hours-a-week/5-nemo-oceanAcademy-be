@@ -45,11 +45,11 @@ public class OAuth2AuthService {
     }
 
     // 카카오 API에서 액세스 토큰을 가져오기
-    public String getKakaoAccessToken(String code) {
+    public String getKakaoAccessToken(String code, boolean isLocal) {
         try {
             RestTemplate restTemplate = new RestTemplate();
             String clientId = kakaoConfig.getKakaoClientId();
-            String redirectUri = kakaoConfig.getRedirectUri();
+            String redirectUri = isLocal ? kakaoConfig.getLocalRedirectUri() : kakaoConfig.getServerRedirectUri();
             String tokenUrl = "https://kauth.kakao.com/oauth/token?grant_type=authorization_code" +
                     "&client_id=" + clientId +
                     "&redirect_uri=" + redirectUri +
@@ -71,17 +71,6 @@ public class OAuth2AuthService {
         } catch (IOException e) {
             Sentry.captureException(e);
             throw new RuntimeException("엑세스 토큰 추출에 실패했습니다.", e);
-        }
-    }
-
-    // 리다이렉션
-    public void redirectAfterLoginSuccess(HttpServletResponse response) {
-        try {
-            String successRedirectUri = kakaoConfig.getRedirectUri();
-            response.sendRedirect(successRedirectUri);
-        } catch (IOException e) {
-            Sentry.captureException(e);
-            throw new RuntimeException("로그인 성공 후 리다이렉트에 실패했습니다.", e);
         }
     }
 
