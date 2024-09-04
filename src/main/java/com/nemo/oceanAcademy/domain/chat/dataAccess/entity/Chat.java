@@ -18,7 +18,7 @@ import java.util.Date;
 @AllArgsConstructor
 public class Chat {
     @Id
-    private ObjectId id;
+    private String id;
     @JsonProperty("roomId")
     private Long roomId;
 
