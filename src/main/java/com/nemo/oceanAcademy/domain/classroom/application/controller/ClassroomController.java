@@ -63,7 +63,6 @@ public class ClassroomController {
             @RequestParam(value = "category", required = false) Integer categoryId,
             @RequestParam(value = "page", defaultValue = "0") int page) {
 
-
         String userId = null;
         if ("enrolled".equals(target) || "created".equals(target)) {
             userId = getAuthenticatedUserId(request);
@@ -71,7 +70,6 @@ public class ClassroomController {
 
         List<ClassroomResponseDto> classrooms = classroomService.getFilteredClassrooms(target, categoryId, userId, page, 10);
         return ApiResponse.success("강의실 목록 조회 성공", "Classrooms retrieved successfully", classrooms);
-
     }
 
     /**
@@ -85,6 +83,9 @@ public class ClassroomController {
     public ResponseEntity<?> createClassroom(HttpServletRequest request,
                                              @Valid @RequestPart("classroomCreateDto") ClassroomCreateDto classroomCreateDto,
                                              @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
+
+        System.out.println("Received classroomCreateDto: " + classroomCreateDto);
+        System.out.println("Received bannerImage: " + imagefile != null ? imagefile.getOriginalFilename() : "No file uploaded");
 
         String userId = getAuthenticatedUserId(request);
         classroomCreateDto.setUserId(userId);
