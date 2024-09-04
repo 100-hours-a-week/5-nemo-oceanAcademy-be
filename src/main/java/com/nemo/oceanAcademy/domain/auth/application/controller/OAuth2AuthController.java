@@ -51,10 +51,19 @@ public class OAuth2AuthController {
      * @return JWT 액세스 토큰 및 리프레시 토큰
      */
     @GetMapping("/kakao/callback")
-    public ResponseEntity<Map<String, String>> kakaoLogin(@RequestParam("code") String code) {
+    public ResponseEntity<Map<String, String>> kakaoLogin(
+            @RequestParam("code") String code,
+            @RequestHeader(value = "Referer", required = false) String referer,
+            @RequestHeader(value = "Origin", required = false) String origin) {
         try {
+            // 로컬 환경인지 운영 환경인지 판단
+            boolean isLocal = (referer != null && referer.contains("localhost")) ||
+                    (origin != null && origin.contains("localhost"));
+
+            System.out.println("isLocal" + isLocal);
+
             // 카카오 액세스 토큰 요청 및 사용자 정보 가져오기
-            String kakaoAccessToken = authService.getKakaoAccessToken(code);
+            String kakaoAccessToken = authService.getKakaoAccessToken(code, isLocal);
             Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
 
             // 사용자 식별값 추출
@@ -75,6 +84,7 @@ public class OAuth2AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
 
     /* ----------------------------------------------------------------- */
 
