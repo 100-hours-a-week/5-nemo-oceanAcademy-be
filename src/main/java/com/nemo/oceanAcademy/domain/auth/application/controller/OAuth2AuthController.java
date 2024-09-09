@@ -1,10 +1,14 @@
 package com.nemo.oceanAcademy.domain.auth.application.controller;
 import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
+import com.nemo.oceanAcademy.domain.auth.application.dto.SignupRequestDto;
 import com.nemo.oceanAcademy.domain.auth.application.service.OAuth2AuthService;
 import com.nemo.oceanAcademy.domain.auth.security.JwtTokenProvider;
 import com.nemo.oceanAcademy.config.KakaoConfig;
+import io.sentry.Sentry;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,9 +35,14 @@ public class OAuth2AuthController {
      */
     @GetMapping("/kakao/app-key")
     public ResponseEntity<Map<String, String>> getKakaoAppKey() {
-        Map<String, String> response = new HashMap<>();
-        response.put("appKey", kakaoConfig.getKakaoClientId());
-        return ResponseEntity.ok(response);
+        try {
+            Map<String, String> response = new HashMap<>();
+            response.put("appKey", kakaoConfig.getKakaoClientId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     /**
@@ -42,23 +51,40 @@ public class OAuth2AuthController {
      * @return JWT 액세스 토큰 및 리프레시 토큰
      */
     @GetMapping("/kakao/callback")
-    public ResponseEntity<Map<String, String>> kakaoLogin(@RequestParam("code") String code) {
-        String kakaoAccessToken = authService.getKakaoAccessToken(code);
-        Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
+    public ResponseEntity<Map<String, String>> kakaoLogin(
+            @RequestParam("code") String code,
+            @RequestHeader(value = "Referer", required = false) String referer,
+            @RequestHeader(value = "Origin", required = false) String origin) {
+        try {
+            // 로컬 환경인지 운영 환경인지 판단
+            boolean isLocal = (referer != null && referer.contains("localhost")) ||
+                    (origin != null && origin.contains("localhost"));
 
-        // 사용자 식별값 추출
-        String userId = (String) kakaoUserInfo.get("id");
+            System.out.println("isLocal" + isLocal);
 
-        // JWT 액세스 토큰, 리프레시 토큰 생성
-        String accessToken = jwtTokenProvider.createAccessToken(userId);
-        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+            // 카카오 액세스 토큰 요청 및 사용자 정보 가져오기
+            String kakaoAccessToken = authService.getKakaoAccessToken(code, isLocal);
+            Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
 
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put("accessToken", accessToken);
-        tokens.put("refreshToken", refreshToken);
+            // 사용자 식별값 추출
+            String userId = (String) kakaoUserInfo.get("id");
 
-        return ResponseEntity.ok(tokens);
+            // JWT 액세스 토큰, 리프레시 토큰 생성
+            String accessToken = jwtTokenProvider.createAccessToken(userId);
+            String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+
+            // 토큰 응답 생성
+            Map<String, String> tokens = new HashMap<>();
+            tokens.put("accessToken", accessToken);
+            tokens.put("refreshToken", refreshToken);
+
+            return ResponseEntity.ok(tokens);
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
+
 
     /* ----------------------------------------------------------------- */
 
@@ -71,10 +97,12 @@ public class OAuth2AuthController {
     private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
-            throw new UnauthorizedException(
+            UnauthorizedException exception = new UnauthorizedException(
                     "사용자 인증에 실패했습니다. (토큰 없음)",
                     "Unauthorized request: userId not found"
             );
+            Sentry.captureException(exception);
+            throw exception;
         }
         return userId;
     }
@@ -94,16 +122,16 @@ public class OAuth2AuthController {
     /**
      * 회원가입 신청
      * @param request 인증된 사용자 요청 객체
-     * @param nickname 사용자 닉네임
-     * @param file 프로필 이미지 파일 (선택)
+     * @param signupRequestDto 사용자 닉네임
+     * @param imagefile 프로필 이미지 파일 (선택)
      * @return 회원가입 결과
      */
     @PostMapping("/signup")
     public ResponseEntity<?> signup(HttpServletRequest request,
-                                    @RequestParam("nickname") String nickname,
-                                    @RequestPart(value = "file", required = false) MultipartFile file) {
-        String userId = getAuthenticatedUserId(request);
-        authService.signup(userId, nickname, file);
+                                    @Valid @RequestPart("signupRequestDto") SignupRequestDto signupRequestDto,
+                                    @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
+
+        authService.signup(request, signupRequestDto, imagefile);
         return ApiResponse.success("회원가입이 완료되었습니다.", "Signup successful", null);
     }
 

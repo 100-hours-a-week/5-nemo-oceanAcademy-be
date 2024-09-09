@@ -1,8 +1,11 @@
 package com.nemo.oceanAcademy.domain.schedule.application.controller;
+import com.nemo.oceanAcademy.common.exception.RoleUnauthorizedException;
 import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
+import com.nemo.oceanAcademy.domain.classroom.application.service.ClassroomService;
 import com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto;
 import com.nemo.oceanAcademy.domain.schedule.application.service.ScheduleService;
+import io.sentry.Sentry;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +24,7 @@ import java.util.Map;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final ClassroomService classroomService;
 
     /**
      * 공통 사용자 인증 처리 메서드 - request에서 userId를 추출해 인증된 사용자 ID를 반환
@@ -31,10 +35,12 @@ public class ScheduleController {
     private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
-            throw new UnauthorizedException(
-                    "사용자 인증에 실패했습니다. (토큰 없음)",
-                    "Unauthorized request: userId not found"
+            UnauthorizedException exception = new UnauthorizedException(
+                "사용자 인증에 실패했습니다. (토큰 없음)",
+                "Unauthorized request: userId not found"
             );
+            Sentry.captureException(exception);
+            throw exception;
         }
         return userId;
     }
@@ -48,6 +54,15 @@ public class ScheduleController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getSchedulesByClassId(HttpServletRequest request, @PathVariable Long classId) {
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
+
+        if (role.equals("관계없음")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+
         List<ScheduleDto> schedules = scheduleService.getSchedulesByClassId(classId, userId);
         return ApiResponse.success("강의 일정 목록 조회 성공", "Schedules retrieved successfully", schedules);
     }
@@ -62,6 +77,15 @@ public class ScheduleController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> createSchedule(HttpServletRequest request, @PathVariable Long classId, @RequestBody ScheduleDto scheduleDto) {
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
+
+        // 강사만 접근 가능
+        if (!role.equals("강사")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
         ScheduleDto createdSchedule = scheduleService.createSchedule(classId, scheduleDto, userId);
         return ApiResponse.success("강의 일정 생성 성공", "Schedule created successfully", createdSchedule);
     }
@@ -69,14 +93,26 @@ public class ScheduleController {
     /**
      * 강의 일정 삭제
      * @param classId 강의 ID
-     * @param id 삭제할 일정 ID
+     * @param scheduleData 삭제할 일정 ID
      * @param request 인증된 사용자 정보 포함 요청 객체
      * @return ResponseEntity<Map<String, Object>> 삭제 결과
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteSchedule(HttpServletRequest request, @PathVariable Long classId, @PathVariable Long id) {
+    @DeleteMapping
+    public ResponseEntity<Map<String, Object>> deleteSchedule(HttpServletRequest request,
+                                                              @PathVariable Long classId,
+                                                              @RequestBody Map<String, Long> scheduleData) {
         String userId = getAuthenticatedUserId(request);
-        scheduleService.deleteSchedule(classId, id, userId);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+        System.out.println("role: " + role);
+
+        // 강사만 접근 가능
+        if (!role.equals("강사")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+        Long scheduleIndex = scheduleData.get("schedule_id");
+        scheduleService.deleteSchedule(classId, scheduleIndex, userId);
         return ApiResponse.success("강의 일정 삭제 성공", "Schedule deleted successfully", null);
     }
 }

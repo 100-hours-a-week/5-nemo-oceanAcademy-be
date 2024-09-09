@@ -1,5 +1,4 @@
 package com.nemo.oceanAcademy.domain.auth.security;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;

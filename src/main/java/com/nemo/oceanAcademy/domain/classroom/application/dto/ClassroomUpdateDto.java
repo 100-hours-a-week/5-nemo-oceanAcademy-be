@@ -4,8 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -40,11 +39,6 @@ public class ClassroomUpdateDto {
     @Column(nullable = true)
     @JsonProperty("announcement")
     private String announcement;
-
-    // 강의 배너 이미지 경로 (선택)
-    @Column(nullable = true)
-    @JsonProperty("bannerImagePath")
-    private String bannerImagePath;
 
     // 강의실 활성화 여부 (선택)
     @Column(nullable = true)
