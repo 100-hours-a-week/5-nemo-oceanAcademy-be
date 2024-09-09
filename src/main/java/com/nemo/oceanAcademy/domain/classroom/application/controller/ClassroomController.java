@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.domain.classroom.application.controller;
+import com.nemo.oceanAcademy.common.exception.RoleUnauthorizedException;
 import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomCreateDto;
@@ -6,12 +7,14 @@ import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomDashboard
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomUpdateDto;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto;
 import com.nemo.oceanAcademy.domain.classroom.application.service.ClassroomService;
-import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
+import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantResponseDto;
+import io.sentry.Sentry;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -35,10 +38,12 @@ public class ClassroomController {
     private String getAuthenticatedUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         if (userId == null) {
-            throw new UnauthorizedException(
+            UnauthorizedException exception = new UnauthorizedException(
                     "사용자 인증에 실패했습니다. (토큰 없음)",
                     "Unauthorized request: userId not found"
             );
+            Sentry.captureException(exception);
+            throw exception;
         }
         return userId;
     }
@@ -68,16 +73,23 @@ public class ClassroomController {
     }
 
     /**
-     * 새로운 강의실 생성
+     * 새로운 강의실 생성 TODO:배너이미지
      * @param request            인증된 사용자 요청 객체
      * @param classroomCreateDto 생성할 강의실 정보
+     * @param imagefile 배너 이미지 파일
      * @return ResponseEntity<ClassroomResponseDto> 생성된 강의실 정보
      */
     @PostMapping
-    public ResponseEntity<?> createClassroom(HttpServletRequest request, @Valid @RequestBody ClassroomCreateDto classroomCreateDto) {
+    public ResponseEntity<?> createClassroom(HttpServletRequest request,
+                                             @Valid @RequestPart("classroomCreateDto") ClassroomCreateDto classroomCreateDto,
+                                             @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
+
+        System.out.println("Received classroomCreateDto: " + classroomCreateDto);
+        System.out.println("Received bannerImage: " + imagefile != null ? imagefile.getOriginalFilename() : "No file uploaded");
+
         String userId = getAuthenticatedUserId(request);
         classroomCreateDto.setUserId(userId);
-        ClassroomResponseDto createdClassroom = classroomService.createClassroom(classroomCreateDto);
+        ClassroomResponseDto createdClassroom = classroomService.createClassroom(classroomCreateDto, imagefile);
         return ApiResponse.success("강의실 생성 성공", "Classroom created successfully", createdClassroom);
     }
 
@@ -106,16 +118,30 @@ public class ClassroomController {
     }
 
     /**
-     * 강의실 정보 업데이트
+     * 강의실 정보 업데이트 TODO:배너이미지
      * @param request            인증된 사용자 요청 객체
      * @param classId            강의실 ID
      * @param classroomUpdateDto 업데이트할 정보
+     * @param imagefile 배너 이미지 파일
      * @return ResponseEntity<ClassroomResponseDto> 업데이트된 강의실 정보
      */
     @PatchMapping("/{classId}")
-    public ResponseEntity<?> updateClassroom(HttpServletRequest request, @PathVariable Long classId, @Valid @RequestBody ClassroomUpdateDto classroomUpdateDto) {
+    public ResponseEntity<?> updateClassroom(HttpServletRequest request,
+                                             @PathVariable Long classId,
+                                             @Valid @RequestPart("classroomUpdateDto") ClassroomUpdateDto classroomUpdateDto,
+                                             @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
+
         String userId = getAuthenticatedUserId(request);
-        ClassroomResponseDto updatedClassroom = classroomService.updateClassroom(classId, classroomUpdateDto);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+
+        // 강사만 접근 가능
+        if (!role.equals("강사")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+
+        ClassroomResponseDto updatedClassroom = classroomService.updateClassroom(classId, classroomUpdateDto, imagefile);
         return ApiResponse.success("강의실 정보 업데이트 성공", "Classroom updated successfully", updatedClassroom);
     }
 
@@ -127,7 +153,17 @@ public class ClassroomController {
      */
     @DeleteMapping("/{classId}/delete")
     public ResponseEntity<?> deleteClassroom(HttpServletRequest request, @PathVariable Long classId) {
+
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+
+        // 강사만 접근 가능
+        if (!role.equals("강사")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+
         classroomService.deleteClassroom(classId);
         return ApiResponse.success("강의실 삭제 성공", "Classroom deleted successfully", null);
     }
@@ -140,7 +176,17 @@ public class ClassroomController {
      */
     @GetMapping("/{classId}/dashboard")
     public ResponseEntity<?> getClassroomDashboard(HttpServletRequest request, @PathVariable Long classId) {
+
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+
+        // 강사나 수강생만 가능
+        if (role.equals("관계없음")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+
         ClassroomDashboardDto dashboard = classroomService.getClassroomDashboard(classId, userId);
         return ApiResponse.success("대시보드 조회 성공", "Dashboard retrieved successfully", dashboard);
     }
@@ -153,8 +199,18 @@ public class ClassroomController {
      */
     @GetMapping("/{classId}/dashboard/students")
     public ResponseEntity<?> getClassroomStudents(HttpServletRequest request, @PathVariable Long classId) {
+
         String userId = getAuthenticatedUserId(request);
-        List<User> students = classroomService.getClassroomStudents(classId);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+
+        // 강사만 가능
+        if (!role.equals("강사")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("조회 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+
+        List<ParticipantResponseDto> students = classroomService.getClassroomStudents(classId);
         return ApiResponse.success("수강생 목록 조회 성공", "Students retrieved successfully", students);
     }
 
@@ -166,7 +222,21 @@ public class ClassroomController {
      */
     @PostMapping("/{classId}/enroll")
     public ResponseEntity<?> enrollParticipant(HttpServletRequest request, @PathVariable Long classId) {
+
         String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+
+        // 수강생이나 강사는 수강신청 불가능
+        if (role.equals("수강생")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("이미 수강 중인 강의입니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        } else if (role.equals("강사")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("본인이 개설한 강의는 수강이 불가능합니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+
         classroomService.enrollParticipant(userId, classId);
         return ApiResponse.success("수강 신청 완료", "Enrollment successful", null);
     }

@@ -1,11 +1,11 @@
 package com.nemo.oceanAcademy.domain.schedule.application.service;
-
 import com.nemo.oceanAcademy.domain.schedule.application.dto.ScheduleDto;
 import com.nemo.oceanAcademy.domain.schedule.dataAccess.entity.Schedule;
 import com.nemo.oceanAcademy.domain.schedule.dataAccess.repository.ScheduleRepository;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.ClassroomRepository;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
+import io.sentry.Sentry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,12 +31,20 @@ public class ScheduleService {
      * @return List<ScheduleDto> 강의 일정 목록
      */
     public List<ScheduleDto> getSchedulesByClassId(Long classId, String userId) {
-        Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
+        try {
+            Classroom classroom = classroomRepository.findById(classId)
+                    .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
 
-        return scheduleRepository.findByClassroom(classroom).stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+            return scheduleRepository.findByClassroom(classroom).stream()
+                    .map(this::convertToDto)
+                    .collect(Collectors.toList());
+        } catch (ResourceNotFoundException e) {
+            Sentry.captureException(e);
+            throw e;
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("강의 일정 목록 조회 중 오류가 발생했습니다.", e);
+        }
     }
 
     /**
@@ -48,31 +56,49 @@ public class ScheduleService {
      * @return ScheduleDto 생성된 강의 일정
      */
     public ScheduleDto createSchedule(Long classId, ScheduleDto scheduleDto, String userId) {
-        Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
+        try {
+            Classroom classroom = classroomRepository.findById(classId)
+                    .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
 
-        Schedule schedule = convertToEntity(scheduleDto);
-        schedule.setClassroom(classroom);
-        Schedule savedSchedule = scheduleRepository.save(schedule);
+            Schedule schedule = convertToEntity(scheduleDto);
+            schedule.setClassroom(classroom);
+            Schedule savedSchedule = scheduleRepository.save(schedule);
 
-        return convertToDto(savedSchedule);
+            return convertToDto(savedSchedule);
+        } catch (ResourceNotFoundException e) {
+            Sentry.captureException(e);
+            throw e;
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("강의 일정 생성 중 오류가 발생했습니다.", e);
+        }
     }
 
     /**
      * 강의 일정 삭제
      *
      * @param classId 강의 ID
-     * @param scheduleId 삭제할 일정 ID
+     * @param scheduleIndex 삭제할 일정 ID
      * @param userId 사용자 ID (인증된 사용자)
      */
-    public void deleteSchedule(Long classId, Long scheduleId, String userId) {
-        Classroom classroom = classroomRepository.findById(classId)
-                .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
+    public void deleteSchedule(Long classId, Long scheduleIndex, String userId) {
+        try {
+            Classroom classroom = classroomRepository.findById(classId)
+                    .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
 
-        Schedule schedule = scheduleRepository.findByIdAndClassroom(scheduleId, classroom)
-                .orElseThrow(() -> new ResourceNotFoundException("해당하는 일정을 찾을 수 없습니다.", "Schedule not found"));
-
-        scheduleRepository.delete(schedule);
+            List<Schedule> schedules = scheduleRepository.findSchedulesByClassroomOrderedById(classroom);   // 강의에 속한 모든 일정을 ID 오름차순으로 조회
+            if (scheduleIndex < 1 || scheduleIndex > schedules.size()) {                                    // 사용자가 제공한 인덱스 범위 확인
+                throw new ResourceNotFoundException("해당 인덱스(" + scheduleIndex + ")에 맞는 일정을 찾을 수 없습니다.", "Schedule not found");
+            }
+            Schedule scheduleToDelete = schedules.get(scheduleIndex.intValue() - 1);                        // 인덱스가 1부터 시작하므로 0-based로 변경하여 해당 일정 가져오기
+            scheduleRepository.delete(scheduleToDelete);                                                    // 일정 삭제
+        } catch (ResourceNotFoundException e) {
+            Sentry.captureException(e);
+            throw e;
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw new RuntimeException("강의 일정 삭제 중 오류가 발생했습니다.", e);
+        }
     }
 
     /**

@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.common.exception;
+import com.nemo.oceanAcademy.common.response.ApiResponse;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,33 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
+
+    // 사용자 역할 권한 없음
+    @ExceptionHandler(RoleUnauthorizedException.class)
+    public ResponseEntity<?> handleRoleUnauthorizedException(RoleUnauthorizedException ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                ex.getMessageKor(),
+                ex.getMessageEng(),
+                HttpStatus.I_AM_A_TEAPOT,  // 418 I AM A TEAPOT
+                "Role Error",
+                ex.getData()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.I_AM_A_TEAPOT);
+    }
+
+    // 이미 가입된 사용자 예외 처리
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                ex.getMessageKor(),
+                ex.getMessageEng(),
+                HttpStatus.CONFLICT,  // 409 Conflict
+                "User Exists",
+                ex.getData()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
 
     // 요청 데이터 유효성 검사 실패
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -105,6 +133,19 @@ public class GlobalExceptionHandler {
                 "error"
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // JWT 인증 실패 예외 처리
+    @ExceptionHandler(JwtAuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleJwtAuthenticationException(JwtAuthenticationException ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                ex.getMessageKor(),
+                ex.getMessageEng(),
+                HttpStatus.UNAUTHORIZED,
+                "Unauthorized",
+                null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
     // 공통 응답 생성 메서드 (한국어 + 영어 메시지 모두 지원)
