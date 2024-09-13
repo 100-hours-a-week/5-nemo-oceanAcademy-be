@@ -2,10 +2,7 @@ package com.nemo.oceanAcademy.domain.classroom.application.controller;
 import com.nemo.oceanAcademy.common.exception.RoleUnauthorizedException;
 import com.nemo.oceanAcademy.common.exception.UnauthorizedException;
 import com.nemo.oceanAcademy.common.response.ApiResponse;
-import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomCreateDto;
-import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomDashboardDto;
-import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomUpdateDto;
-import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto;
+import com.nemo.oceanAcademy.domain.classroom.application.dto.*;
 import com.nemo.oceanAcademy.domain.classroom.application.service.ClassroomService;
 import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantResponseDto;
 import io.sentry.Sentry;
@@ -166,6 +163,40 @@ public class ClassroomController {
 
         classroomService.deleteClassroom(classId);
         return ApiResponse.success("강의실 삭제 성공", "Classroom deleted successfully", null);
+    }
+
+    /**
+     * 강의 라이브 정보 조회
+     * @param classId 강의실 ID
+     * @return ResponseEntity<ClassroomDashboardDto> 강의 대시보드 정보
+     */
+    @GetMapping("/{classId}/isActive")
+    public ResponseEntity<?> getClassroomLiveStatus(@PathVariable Long classId) {
+
+        ClassroomLiveStatusDto live = classroomService.getClassroomIsLive(classId);
+        return ApiResponse.success("라이브 상태 조회 성공", "Live status retrieved successfully", live);
+    }
+
+    /**
+     * 강의 라이브 정보 수정
+     * @param classId 강의실 ID
+     * @return ResponseEntity<ClassroomDashboardDto> 강의 대시보드 정보
+     */
+    @PatchMapping("/{classId}/isActive")
+    public ResponseEntity<?> updateClassroomLiveStatus(HttpServletRequest request, @PathVariable Long classId) {
+
+        String userId = getAuthenticatedUserId(request);
+        String role = classroomService.getUserRoleInClassroom(classId, userId);
+
+        // 강사만 가능
+        if (!role.equals("강사")) {
+            RoleUnauthorizedException exception = new RoleUnauthorizedException("해당 강의에 접근 권한이 없습니다.", "Access denied");
+            Sentry.captureException(exception);
+            throw exception;
+        }
+
+        ClassroomLiveStatusDto live = classroomService.changeClassroomIsLive(classId);
+        return ApiResponse.success("라이브 상태 수정 성공", "Live status updated successfully", live);
     }
 
     /**
