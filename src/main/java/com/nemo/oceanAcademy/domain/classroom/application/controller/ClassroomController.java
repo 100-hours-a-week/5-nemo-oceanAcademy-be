@@ -85,7 +85,7 @@ public class ClassroomController {
                                              @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
 
         System.out.println("Received classroomCreateDto: " + classroomCreateDto);
-        System.out.println("Received bannerImage: " + imagefile != null ? imagefile.getOriginalFilename() : "No file uploaded");
+        System.out.println("Received bannerImage: " + (imagefile != null && !imagefile.isEmpty() ? imagefile.getOriginalFilename() : "No file uploaded"));
 
         String userId = getAuthenticatedUserId(request);
         classroomCreateDto.setUserId(userId);
