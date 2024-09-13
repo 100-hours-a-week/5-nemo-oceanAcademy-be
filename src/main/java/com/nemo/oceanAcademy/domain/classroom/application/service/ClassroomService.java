@@ -270,6 +270,57 @@ public class ClassroomService {
         }
     }
 
+    // 강의실 라이브 정보 불러오기
+    public ClassroomLiveStatusDto getClassroomIsLive(Long classId) {
+        try {
+            Classroom classroom = classroomRepository.findById(classId)
+                    .orElseThrow(() -> {
+                        ResourceNotFoundException exception = new ResourceNotFoundException(
+                                "해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.",
+                                "Classroom not found"
+                        );
+
+                        Sentry.withScope(scope -> {
+                            scope.setTag("classroom_id", classId.toString());
+                            scope.setExtra("error_type", "Classroom Not Found");
+                            Sentry.captureException(exception);
+                        });
+
+                        return exception;
+                    });
+
+            return ClassroomLiveStatusDto.builder()
+                    .isActive(classroom.getIsActive())
+                    .build();
+
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw e;
+        }
+    }
+
+    // 강의실 라이브 정보 수정하기
+    public ClassroomLiveStatusDto changeClassroomIsLive(Long classId) {
+        try {
+            Classroom classroom = classroomRepository.findById(classId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.",
+                            "Classroom not found"
+                    ));
+
+            classroom.setIsActive(!classroom.getIsActive());
+            classroomRepository.save(classroom);
+
+            return ClassroomLiveStatusDto.builder()
+                    .isActive(classroom.getIsActive())
+                    .build();
+
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            throw e;
+        }
+    }
+
     // 강의실 대시보드 정보 및 스케줄 가져오기
     public ClassroomDashboardDto getClassroomDashboard(Long classId, String userId) {
         try {
