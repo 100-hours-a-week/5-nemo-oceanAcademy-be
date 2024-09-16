@@ -65,7 +65,7 @@ public class UserController {
                                                @Valid @RequestPart("userUpdateDTO") UserUpdateDTO userUpdateDTO,
                                                @RequestPart(value = "imagefile", required = false) MultipartFile imagefile) {
 
-        System.out.println("imagefile controller:" + imagefile);
+        System.out.println("Received profileImage : " + (imagefile != null && !imagefile.isEmpty() ? imagefile.getOriginalFilename() : "No file uploaded"));
 
         // TODO : 3개 중 하나 성공하면 그냥 성공 때림 ㄱ
         userService.updateUserProfile(request, userUpdateDTO, imagefile);

@@ -3,12 +3,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
 import com.nemo.oceanAcademy.common.exception.UserAlreadyExistsException;
+import com.nemo.oceanAcademy.common.s3.S3ImageUtils;
 import com.nemo.oceanAcademy.domain.auth.application.dto.SignupRequestDto;
 import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import io.sentry.Sentry;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -30,19 +32,12 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class OAuth2AuthService {
 
     private final UserRepository userRepository;
     private final KakaoConfig kakaoConfig;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    @Autowired
-    public OAuth2AuthService(UserRepository userRepository, KakaoConfig kakaoConfig) {
-        this.userRepository = userRepository;
-        this.kakaoConfig = kakaoConfig;
-    }
+    private final S3ImageUtils imageUtils;
 
     // 카카오 API에서 액세스 토큰을 가져오기
     public String getKakaoAccessToken(String code, boolean isLocal) {
@@ -148,7 +143,7 @@ public class OAuth2AuthService {
 
             // 프로필 이미지 파일 업데이트
             if (imagefile != null && !imagefile.isEmpty()) {
-                String fileName = saveFileToDirectory(imagefile);
+                String fileName = imageUtils.saveFileToS3(imagefile);
                 user.setProfileImagePath(fileName);
             }
 
@@ -180,26 +175,6 @@ public class OAuth2AuthService {
         } catch (Exception e) {
             Sentry.captureException(e);
             throw new RuntimeException("회원 탈퇴 처리 중 오류가 발생했습니다.", e);
-        }
-    }
-
-    /**
-     * 파일을 로컬 디렉토리에 저장
-     * @param imagefile 저장할 파일
-     * @return String 저장된 파일 경로
-     * @throws RuntimeException 파일 저장 중 오류 발생 시 예외 처리
-     */
-    private String saveFileToDirectory(MultipartFile imagefile) {
-        try {
-            // 고유한 파일 이름 생성 (UUID + 원래 파일명)
-            String fileName = UUID.randomUUID().toString() + "-" + imagefile.getOriginalFilename();
-            Path imagefilePath = Paths.get(uploadDir + "/" + fileName);
-            Files.createDirectories(imagefilePath.getParent());                  // 저장 경로가 없으면 생성
-            Files.write(imagefilePath, imagefile.getBytes());                    // 파일 저장
-            return fileName;                                                     // 저장된 파일 이름 반환
-        } catch (IOException e) {
-            Sentry.captureException(e);
-            throw new RuntimeException("파일 저장에 실패했습니다.", e);                // 파일 저장 실패 시 예외 처리
         }
     }
 }

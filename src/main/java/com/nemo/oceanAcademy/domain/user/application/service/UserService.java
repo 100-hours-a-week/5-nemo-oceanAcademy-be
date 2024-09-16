@@ -1,11 +1,13 @@
 package com.nemo.oceanAcademy.domain.user.application.service;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
+import com.nemo.oceanAcademy.common.s3.S3ImageUtils;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserCreateDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserResponseDTO;
 import com.nemo.oceanAcademy.domain.user.application.dto.UserUpdateDTO;
 import io.sentry.Sentry;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,16 +23,11 @@ import java.util.UUID;
  * UserService는 사용자 정보 조회, 생성, 업데이트, 닉네임 중복 확인 등의 비즈니스 로직을 처리합니다.
  */
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final S3ImageUtils imageUtils;
 
     /**
      * 사용자 정보 조회
@@ -103,7 +100,14 @@ public class UserService {
 
             // 프로필 이미지 파일 업데이트
             if (imagefile != null && !imagefile.isEmpty()) {
-                String fileName = saveFileToDirectory(imagefile);
+
+                /* // 기존 배너 이미지 삭제 (더미 데이터로 인해 에러가 발생할 것 같아 주석 처리 해둡니다.
+                if (user.getProfileImagePath() != null){
+                    imageUtils.deleteFileFromS3(user.getProfileImagePath());
+                }
+                */
+
+                String fileName = imageUtils.saveFileToS3(imagefile);
                 user.setProfileImagePath(fileName);
             }
 
@@ -131,23 +135,4 @@ public class UserService {
         }
     }
 
-    /**
-     * 파일을 로컬 디렉토리에 저장
-     * @param imagefile 저장할 파일
-     * @return String 저장된 파일 경로
-     * @throws RuntimeException 파일 저장 중 오류 발생 시 예외 처리
-     */
-    private String saveFileToDirectory(MultipartFile imagefile) {
-        try {
-            // 고유한 파일 이름 생성 (UUID + 원래 파일명)
-            String fileName = UUID.randomUUID().toString() + "-" + imagefile.getOriginalFilename();
-            Path imagefilePath = Paths.get(uploadDir + "/" + fileName);
-            Files.createDirectories(imagefilePath.getParent());                  // 저장 경로가 없으면 생성
-            Files.write(imagefilePath, imagefile.getBytes());                    // 파일 저장
-            return fileName;                                                     // 저장된 파일 이름 반환
-        } catch (IOException e) {
-            Sentry.captureException(e);
-            throw new RuntimeException("파일 저장에 실패했습니다.", e);                // 파일 저장 실패 시 예외 처리
-        }
-    }
 }
