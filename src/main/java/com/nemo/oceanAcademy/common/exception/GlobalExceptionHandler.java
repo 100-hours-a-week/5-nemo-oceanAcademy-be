@@ -148,6 +148,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
 
+    // S3 이미지 업로드 예외 처리
+    @ExceptionHandler(S3Exception.class)
+    public ResponseEntity<Map<String, Object>> handleS3Exception(S3Exception ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                ex.getMessageKor(),
+                ex.getMessageEng(),
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Internal Server Error",
+                null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     // 공통 응답 생성 메서드 (한국어 + 영어 메시지 모두 지원)
     private Map<String, Object> createErrorResponse(String messageKor, String messageEng, HttpStatus status, String errorType, String data) {
         Map<String, Object> response = new HashMap<>();
