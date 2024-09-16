@@ -3,9 +3,11 @@ package com.nemo.oceanAcademy.config;
 import com.nemo.oceanAcademy.domain.chat.application.exception.StompExceptionHandler;
 import com.nemo.oceanAcademy.domain.chat.application.interceptor.FilterChannelInterceptor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.security.messaging.context.SecurityContextChannelInterceptor;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -35,6 +37,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(filterChannelInterceptor);
+        registration.interceptors(securityContextChannelInterceptor(),filterChannelInterceptor);
+    }
+
+    // SecurityContextChannelInterceptor Bean 설정
+    @Bean
+    public SecurityContextChannelInterceptor securityContextChannelInterceptor() {
+        return new SecurityContextChannelInterceptor();
     }
 }
