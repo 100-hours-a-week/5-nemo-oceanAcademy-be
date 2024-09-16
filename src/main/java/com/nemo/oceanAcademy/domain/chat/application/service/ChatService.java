@@ -23,6 +23,11 @@ public class ChatService {
     @Transactional
     // 메시지를 저장하는 메서드
     public Mono<Chat> saveChatMessage(Chat chat) {
+        // 채팅 메시지가 빈 값이거나 공백만 있는 경우 메시지를 무시
+        if (chat.getContent() == null || chat.getContent().trim().isEmpty()) {
+            return Mono.empty(); // 빈 메시지일 경우 아무 작업도 하지 않음
+        }
+
         String chatId = sequenceGeneratorService.generateChatId(chat.getRoomId());  // 자동 증가 ID를 생성하여 설정
         chat.setId(chatId);                         // 생성된 ID를 Chat 엔티티에 설정
         chat.setCreatedDate(new Date());            // 메시지 생성 날짜 설정
