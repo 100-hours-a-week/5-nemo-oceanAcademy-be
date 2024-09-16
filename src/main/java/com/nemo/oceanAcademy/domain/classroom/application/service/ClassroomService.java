@@ -176,7 +176,7 @@ public class ClassroomService {
             // 배너 이미지 파일 업데이트
             if (imagefile != null && !imagefile.isEmpty()) {
 
-                /* 기존 배너 이미지 삭제 (더미 데이터로 인해 에러가 발생할 것 같아 주석 처리 해둡니다.
+                /* // 기존 배너 이미지 삭제 (더미 데이터로 인해 에러가 발생할 것 같아 주석 처리 해둡니다.
                 if (classroom.getBannerImagePath() != null){
                     imageUtils.deleteFileFromS3(classroom.getBannerImagePath());
                 }
