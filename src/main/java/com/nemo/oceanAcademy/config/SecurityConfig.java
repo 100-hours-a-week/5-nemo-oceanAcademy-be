@@ -35,6 +35,9 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // 세션을 사용하지 않음
                 .authorizeHttpRequests(auth -> auth
 
+                        // static resources
+                        .requestMatchers("/static/**").permitAll()
+
                         // Users
                         .requestMatchers(HttpMethod.PATCH, "/api/users").authenticated()                // 사용자 정보 업데이트, 해당 Id 유저만 가능
                         .requestMatchers(HttpMethod.GET, "/api/users").authenticated()                  // 사용자 정보 조회, 해당 Id 유저만 가능
