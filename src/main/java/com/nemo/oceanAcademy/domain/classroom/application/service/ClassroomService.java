@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.domain.classroom.application.service;
+import com.nemo.oceanAcademy.common.s3.S3ImageUtils;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.*;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.ClassroomRepository;
@@ -55,9 +56,8 @@ public class ClassroomService {
     private final ParticipantRepository participantRepository;
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
+    private final S3ImageUtils imageUtils;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
 
     // 공통 변환 메서드
     private ClassroomResponseDto toClassroomResponseDto(Classroom classroom) {
@@ -139,7 +139,7 @@ public class ClassroomService {
 
             // 배너 이미지 파일 업데이트
             if (imagefile != null && !imagefile.isEmpty()) {
-                String fileName = saveFileToDirectory(imagefile);
+                String fileName = imageUtils.saveFileToS3(imagefile);
                 classroom.setBannerImagePath(fileName);
             }
 
@@ -175,7 +175,14 @@ public class ClassroomService {
 
             // 배너 이미지 파일 업데이트
             if (imagefile != null && !imagefile.isEmpty()) {
-                String fileName = saveFileToDirectory(imagefile);
+
+                /* 기존 배너 이미지 삭제 (더미 데이터로 인해 에러가 발생할 것 같아 주석 처리 해둡니다.
+                if (classroom.getBannerImagePath() != null){
+                    imageUtils.deleteFileFromS3(classroom.getBannerImagePath());
+                }
+                */
+
+                String fileName = imageUtils.saveFileToS3(imagefile);
                 classroom.setBannerImagePath(fileName);
             }
 
@@ -209,24 +216,6 @@ public class ClassroomService {
         } catch (Exception e) {
             Sentry.captureException(e);
             throw e;
-        }
-    }
-
-    // 파일을 로컬 디렉토리에 저장
-    private String saveFileToDirectory(MultipartFile imagefile) {
-        try {
-            String fileName = UUID.randomUUID().toString() + "-" + imagefile.getOriginalFilename();
-            Path imagefilePath = Paths.get(uploadDir + "/" + fileName);
-            Files.createDirectories(imagefilePath.getParent());
-            Files.write(imagefilePath, imagefile.getBytes());
-            return fileName;
-        } catch (IOException e) {
-            Sentry.withScope(scope -> {
-                scope.setTag("file_name", imagefile.getOriginalFilename());
-                scope.setTag("file_size", String.valueOf(imagefile.getSize()));
-                Sentry.captureException(e);
-            });
-            throw new RuntimeException("파일 저장에 실패했습니다.", e);
         }
     }
 
