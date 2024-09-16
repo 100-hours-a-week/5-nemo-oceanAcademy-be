@@ -1,7 +1,10 @@
 src/main/resources/application-secret.yml
 src/main/resources/application.yml
 src/main/resources/secret.txt
+src/main/resources/static/*
+!src/main/resources/static/image.txt
 *.env
+
 *#
 *.iml
 *.ipr
