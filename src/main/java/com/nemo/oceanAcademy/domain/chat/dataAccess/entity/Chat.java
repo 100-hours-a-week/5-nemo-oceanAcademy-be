@@ -25,16 +25,20 @@ public class Chat {
     @JsonProperty("content")
     private String content;
 
-    @JsonProperty("writerId")
-    private Long writerId;
+    @JsonProperty("writer")
+    private String writer;
+
+    @JsonProperty("profile_image_path")
+    private String profileImagePath;
 
     @JsonProperty("createdDate")
     private Date createdDate;
 
-    public Chat(Long roomId, String content, Long writerId, Date date) {
+    public Chat(Long roomId, String content, String writer, String profileImagePath, Date date) {
         this.roomId = roomId;
         this.content = content;
-        this.writerId = writerId;
+        this.writer = writer;
+        this.profileImagePath = profileImagePath;
         this.createdDate = date;
     }
 
