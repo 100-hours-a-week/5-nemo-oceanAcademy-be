@@ -1,5 +1,7 @@
 package com.nemo.oceanAcademy.domain.classroom.dataAccess.repository;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto;
+import com.nemo.oceanAcademy.domain.classroom.application.dto.v2.ClassroomInfoDto;
+import com.nemo.oceanAcademy.domain.classroom.application.dto.v2.ClassroomListResponseDto;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
 import org.springframework.data.domain.Pageable;  // 이 부분을 수정했습니다
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -63,5 +65,17 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
             "WHERE c.id = :classId")
     Optional<Classroom> findByIdWithJoins(@Param("classId") Long classId);
 
+    // [RealTime] 단일 강의실 조회
+    @Query("SELECT new com.nemo.oceanAcademy.domain.classroom.application.dto.v2.ClassroomListResponseDto(c, AVG(r.rating)) " +
+            "FROM Classroom c, Review r " +
+            "WHERE c.id = :classId AND r.classroom.id = c.id " +
+            "GROUP BY c")
+    Optional<ClassroomListResponseDto> findByIdWithReviewRating(@Param("classId") Long classId);
 
+    // [RealTime] 전체 강의실 조회
+    @Query("SELECT new com.nemo.oceanAcademy.domain.classroom.application.dto.v2.ClassroomInfoDto(c, AVG(r.rating)) " +
+            "FROM Classroom c LEFT JOIN Review r ON r.classroom.id = c.id " +
+            "WHERE (:categoryId IS NULL OR c.category.id = :categoryId) " +
+            "GROUP BY c")
+    List<ClassroomInfoDto> findAllWithAverageRating(@Param("categoryId") Integer categoryId, Pageable pageable);
 }
