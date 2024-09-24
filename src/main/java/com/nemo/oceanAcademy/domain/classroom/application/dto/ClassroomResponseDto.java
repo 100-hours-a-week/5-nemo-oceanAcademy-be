@@ -52,6 +52,9 @@ public class ClassroomResponseDto {
     // 강의실 활성화 여부 (조회 시 반환)
     private Boolean isActive;
 
+    // 강의실 수강 인원
+    private long studentCount;
+
     // Classroom 엔티티를 기반으로 생성하는 생성자 추가
     public ClassroomResponseDto(Classroom classroom) {
         this.id = classroom.getId();  // 강의실 아이디
@@ -67,5 +70,11 @@ public class ClassroomResponseDto {
         this.announcement = classroom.getAnnouncement();  // 강의 공지
         this.bannerImagePath = classroom.getBannerImagePath();  // 배너 이미지 경로
         this.isActive = classroom.getIsActive();  // 강의실 활성화 여부
+    }
+
+    // 수강 인원을 설정하는 생성자
+    public ClassroomResponseDto(Classroom classroom, long studentCount) {
+        this(classroom);
+        this.studentCount = studentCount;
     }
 }
