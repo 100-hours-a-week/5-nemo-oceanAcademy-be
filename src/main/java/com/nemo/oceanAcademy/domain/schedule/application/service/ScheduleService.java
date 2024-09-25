@@ -78,20 +78,16 @@ public class ScheduleService {
      * 강의 일정 삭제
      *
      * @param classId 강의 ID
-     * @param scheduleIndex 삭제할 일정 ID
+     * @param scheduleId 삭제할 일정 ID
      * @param userId 사용자 ID (인증된 사용자)
      */
-    public void deleteSchedule(Long classId, Long scheduleIndex, String userId) {
+    public void deleteSchedule(Long classId, Long scheduleId, String userId) {
         try {
             Classroom classroom = classroomRepository.findById(classId)
                     .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의실을 찾을 수 없습니다.", "Classroom not found"));
-
-            List<Schedule> schedules = scheduleRepository.findSchedulesByClassroomOrderedById(classroom);   // 강의에 속한 모든 일정을 ID 오름차순으로 조회
-            if (scheduleIndex < 1 || scheduleIndex > schedules.size()) {                                    // 사용자가 제공한 인덱스 범위 확인
-                throw new ResourceNotFoundException("해당 인덱스(" + scheduleIndex + ")에 맞는 일정을 찾을 수 없습니다.", "Schedule not found");
-            }
-            Schedule scheduleToDelete = schedules.get(scheduleIndex.intValue() - 1);                        // 인덱스가 1부터 시작하므로 0-based로 변경하여 해당 일정 가져오기
-            scheduleRepository.delete(scheduleToDelete);                                                    // 일정 삭제
+            Schedule schedule = scheduleRepository.findById(scheduleId)
+                    .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + scheduleId + ")의 일정을 찾을 수 없습니다.", "Schedule not found"));
+            scheduleRepository.delete(schedule);
         } catch (ResourceNotFoundException e) {
             Sentry.captureException(e);
             throw e;
