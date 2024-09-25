@@ -78,7 +78,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
         env:
-          DB_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
+          DOCKER_DB_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
           script: |
             cd ~/app
             docker-compose pull nemo-be && \
