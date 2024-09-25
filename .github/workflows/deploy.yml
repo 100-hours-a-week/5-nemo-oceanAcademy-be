@@ -36,10 +36,6 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-          DB_PORT: ${{ secrets.DOCKER_DB_PORT }}
-          DB_NAME: ${{ secrets.DOCKER_DB_NAME }}
-          DB_USERNAME: ${{ secrets.DOCKER_DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
 
       - name: Docker Hub 로그인
         uses: docker/login-action@v2
@@ -82,11 +78,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
         env:
-          DB_PORT: ${{ secrets.DOCKER_DB_PORT }}
-          DB_NAME: ${{ secrets.DOCKER_DB_NAME }}
-          DB_USERNAME: ${{ secrets.DOCKER_DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
           script: |
             cd ~/app
             docker-compose pull nemo-be && \

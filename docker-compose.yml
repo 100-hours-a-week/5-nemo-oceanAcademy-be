@@ -12,10 +12,6 @@ services:
       - ~/app/static:/app/static
     environment:
       FILE_UPLOAD_DIR: /app/static
-      DB_PORT: ${DB_PORT}         # DB 포트
-      DB_NAME: ${DB_NAME}         # DB 이름
-      DB_USERNAME: ${DB_USERNAME} # DB 사용자 이름
-      DB_PASSWORD: ${DB_PASSWORD} # DB 비밀번호
     depends_on:
       - nemo-mysql
     networks:
