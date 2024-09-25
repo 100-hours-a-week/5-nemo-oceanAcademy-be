@@ -12,12 +12,10 @@ services:
       - ~/app/static:/app/static
     environment:
       FILE_UPLOAD_DIR: /app/static
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}         # DB 포트
+      DB_NAME: ${DB_NAME}         # DB 이름
+      DB_USERNAME: ${DB_USERNAME} # DB 사용자 이름
+      DB_PASSWORD: ${DB_PASSWORD} # DB 비밀번호
     depends_on:
       - nemo-mysql
     networks:
@@ -27,13 +25,12 @@ services:
     image: judykimsohui/nemo-mysql:latest
     container_name: nemo-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: OceanAcademyDevDB
     ports:
       - "3307:3306"
     volumes:
       - ./db-data:/var/lib/mysql
-      - ./rds_backup.sql:/docker-entrypoint-initdb.d/rds_backup.sql
     networks:
       - nemo-net
 
