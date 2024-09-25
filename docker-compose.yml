@@ -18,7 +18,6 @@ services:
       - nemo-net
 
   nemo-mysql:
-    build: ./mysql
     image: nemo-mysql:latest
     container_name: nemo-mysql
     ports:
