@@ -4,6 +4,8 @@ src/main/resources/secret.txt
 src/main/resources/static/*
 !src/main/resources/static/image.txt
 migration_script.sh
+rds_backup.sql
+
 *.env
 
 *#
