@@ -18,7 +18,7 @@ services:
       - nemo-net
 
   nemo-mysql:
-    image: mysql:5.7
+    image: judykimsohui/nemo-mysql:latest
     container_name: nemo-mysql
     ports:
       - "3307:3306"
