@@ -73,7 +73,7 @@ jobs:
             echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
 
       - name: Set environment variables
-        run: echo "DOCKER_DB_PASSWORD=${{ secrets.DOCKER_DB_PASSWORD }}" >> $GITHUB_ENV
+        run: echo "MYSQL_ROOT_PASSWORD=${{ secrets.DOCKER_DB_PASSWORD }}" >> $GITHUB_ENV
 
       - name: Docker Compose 실행
         uses: appleboy/ssh-action@v0.1.6
@@ -82,7 +82,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
         env:
-          DOCKER_DB_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
           script: |
             cd ~/app
             docker-compose pull nemo-be && \
