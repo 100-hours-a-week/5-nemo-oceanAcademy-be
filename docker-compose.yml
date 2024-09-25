@@ -3,7 +3,7 @@ version: '3.8'
 services:
   app:
     build: ./
-    image: nemo-be:latest
+    image: judykimsohui/nemo-be:latest
     container_name: nemo-be
     ports:
       - "5000:8080"
@@ -18,7 +18,7 @@ services:
       - nemo-net
 
   nemo-mysql:
-    image: nemo-mysql:latest
+    image: judykimsohui/nemo-mysql:latest
     container_name: nemo-mysql
     ports:
       - "3307:3306"
