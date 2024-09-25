@@ -3,7 +3,7 @@ version: '3.8'
 services:
   app:
     build: ./
-    image: nemo-be
+    image: nemo-be:latest
     container_name: nemo-be
     ports:
       - "5000:8080"
@@ -22,15 +22,16 @@ services:
       - nemo-net
 
   nemo-mysql:
-    image: nemo-mysql
+    build: ./mysql
+    image: nemo-mysql:latest
     container_name: nemo-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: OceanAcademyDevDB
     ports:
       - "3307:3306"
     volumes:
       - ./db-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: OceanAcademyDevDB
     networks:
       - nemo-net
 
