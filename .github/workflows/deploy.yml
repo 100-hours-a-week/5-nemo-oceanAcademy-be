@@ -29,13 +29,12 @@ jobs:
         run: ./gradlew clean build
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ktb-0402
-          SENTRY_PROJECT: java-spring-boot
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          DB_PORT: ${{ secrets.DOCKER_DB_PORT }}
+          DB_NAME: ${{ secrets.DOCKER_DB_NAME }}
+          DB_USERNAME: ${{ secrets.DOCKER_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
 
       - name: Docker Hub 로그인
         uses: docker/login-action@v2
@@ -78,14 +77,11 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
         env:
-          SPRING_PROFILES_ACTIVE: ${{ secrets.SPRING_PROFILES_ACTIVE }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          DB_PORT: ${{ secrets.DOCKER_DB_PORT }}
+          DB_NAME: ${{ secrets.DOCKER_DB_NAME }}
+          DB_USERNAME: ${{ secrets.DOCKER_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
           script: |
             cd ~/app
             docker-compose pull nemo-be && \
