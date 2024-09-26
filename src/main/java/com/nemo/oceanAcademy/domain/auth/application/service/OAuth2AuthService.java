@@ -9,10 +9,9 @@ import com.nemo.oceanAcademy.config.KakaoConfig;
 import com.nemo.oceanAcademy.domain.user.dataAccess.entity.User;
 import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import io.sentry.Sentry;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -20,16 +19,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -60,15 +53,12 @@ public class OAuth2AuthService {
                 default:
                     throw new IllegalArgumentException("잘못된 환경: " + environment);
             }
-
             // 로그로 확인
             System.out.println("환경: " + environment + ", 리다이렉트 URI: " + redirectUri);
-
             String tokenUrl = "https://kauth.kakao.com/oauth/token?grant_type=authorization_code" +
                     "&client_id=" + clientId +
                     "&redirect_uri=" + redirectUri +
                     "&code=" + code;
-
             ResponseEntity<String> tokenResponse = restTemplate.postForEntity(tokenUrl, null, String.class);
             return extractAccessToken(tokenResponse.getBody());
         } catch (Exception e) {
