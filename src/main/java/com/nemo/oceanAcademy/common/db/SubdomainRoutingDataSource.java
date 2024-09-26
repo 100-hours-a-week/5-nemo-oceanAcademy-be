@@ -39,10 +39,12 @@ public class SubdomainRoutingDataSource extends AbstractRoutingDataSource {
             }
 
             // 호스트가 예상 범위 내에 없는 경우 기본 데이터베이스 사용
+            System.out.println("뭐임? 예상 밖 prod 데이터베이스를 사용합니다.");
             return null;  // 기본 데이터베이스 사용
         }
 
         // HTTP 요청 컨텍스트가 없으면 기본 데이터베이스 사용
+        System.out.println("요청 컨텍스트가 없다고? prod 데이터베이스를 사용합니다.");
         return null;  // 기본 데이터베이스 사용
     }
 }
