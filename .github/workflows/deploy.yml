@@ -47,11 +47,11 @@ jobs:
       - name: Build and Push Docker image
         run: |
           docker build -t nemo-be:latest .
-          docker tag nemo-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
+          docker tag nemo-be:latest ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
           
           docker build -t nemo-mysql:latest .
-          docker tag nemo-mysql:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest
+          docker tag nemo-mysql:latest ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest
 
   deploy:
