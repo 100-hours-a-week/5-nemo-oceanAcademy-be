@@ -45,7 +45,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and Push Docker image
-        run: |          
+        run: |
           docker build -t nemo-be:latest .
           docker tag nemo-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
@@ -53,9 +53,6 @@ jobs:
           docker build -t nemo-mysql:latest .
           docker tag nemo-mysql:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest
-          
-          docker-compose build
-          docker-compose push
 
   deploy:
     runs-on: ubuntu-latest
