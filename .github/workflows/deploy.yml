@@ -90,11 +90,13 @@ jobs:
           MYSQL_ROOT_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
           script: |
             cd ~/app
-            docker-compose pull nemo-be && \
-            docker-compose up -d --no-deps nemo-be  
-            
+            # nemo-mysql 실행
             docker-compose pull nemo-mysql && \
             docker-compose up -d --no-deps nemo-mysql
+            
+            # nemo-mysql 실행된 후 nemo-be 실행 (의존성)
+            docker-compose pull nemo-be && \
+            docker-compose up -d --no-deps nemo-be
 
       - name: Docker mysql 컨테이너 로그 출력
         uses: appleboy/ssh-action@v0.1.6
