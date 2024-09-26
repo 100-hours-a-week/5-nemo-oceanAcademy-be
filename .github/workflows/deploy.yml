@@ -89,14 +89,19 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
           script: |
-            cd ~/app
-            # nemo-mysql 실행
-            docker-compose pull nemo-mysql && \
-            docker-compose up -d --no-deps nemo-mysql
+            docker pull ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest && \
+            docker stop nemo-be || true && \
+            docker rm nemo-be || true && \
+            docker run -d -p 5000:8080 --name nemo-be \
+              -v ~/app/config/application.yml:/app/application.yml \
+              -e FILE_UPLOAD_DIR=/app/static \
+              ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
             
-            # nemo-mysql 실행된 후 nemo-be 실행 (의존성)
-            docker-compose pull nemo-be && \
-            docker-compose up -d --no-deps nemo-be
+            docker pull ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest && \
+            docker stop nemo-mysql || true && \
+            docker rm nemo-mysql || true && \
+            docker run -d -p 3307:3306 --name nemo-mysql \
+              ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest
 
       - name: Docker mysql 컨테이너 로그 출력
         uses: appleboy/ssh-action@v0.1.6
