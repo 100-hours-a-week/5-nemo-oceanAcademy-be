@@ -122,19 +122,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // 유효하지 않은 요청
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidRequestException(MethodArgumentNotValidException ex) {
-        Map<String, Object> errorResponse = createErrorResponse(
-                "유효하지 않은 요청 값입니다.",
-                "Invalid Exception",
-                HttpStatus.BAD_REQUEST,
-                "Bad Request",
-                "error"
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
     // 그 외 모든 예외 처리 (알 수 없는 예외)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
