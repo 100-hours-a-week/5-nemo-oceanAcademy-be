@@ -89,21 +89,6 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.DOCKER_DB_PASSWORD }}
           script: |
-            # MySQL 컨테이너 실행
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest && \
-            docker stop nemo-mysql || true && \
-            docker rm nemo-mysql || true && \
-            docker run -d -p 3307:3306 --name nemo-mysql \
-              -e MYSQL_ROOT_PASSWORD=${{ secrets.DOCKER_DB_PASSWORD }} \
-              -e MYSQL_DATABASE=OceanAcademyDevDB \
-              ${{ secrets.DOCKER_USERNAME }}/nemo-mysql:latest
-
-            # MySQL이 준비될 때까지 대기
-            until docker exec nemo-mysql mysqladmin ping -h"127.0.0.1" --silent; do
-                echo "Waiting for MySQL to be ready..."
-                sleep 5
-            done
-
             # nemo-be 컨테이너 실행
             docker pull ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest && \
             docker stop nemo-be || true && \
@@ -111,8 +96,5 @@ jobs:
             docker run -d -p 5000:8080 --name nemo-be \
               -v ~/app/config/application.yml:/app/application.yml \
               -e FILE_UPLOAD_DIR=/app/static \
-              ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest
-
-            # 로그 확인
-            docker logs nemo-mysql
+              ${{ secrets.DOCKER_USERNAME }}/nemo-be:latest            
             docker logs nemo-be
