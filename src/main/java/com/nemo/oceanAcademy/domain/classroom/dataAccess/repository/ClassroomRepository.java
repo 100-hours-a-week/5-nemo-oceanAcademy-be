@@ -57,7 +57,7 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
     @Query("SELECT c FROM Classroom c " +
             "JOIN FETCH c.user u " +
             "JOIN FETCH c.category cat")
-    List<Classroom> findAllWithJoins();
+    List<Classroom> findAllWithJoins(Pageable pageable);
 
     // 단일 강의실 조회
     @Query("SELECT c FROM Classroom c " +

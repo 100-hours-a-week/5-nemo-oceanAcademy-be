@@ -79,9 +79,9 @@ public class ClassroomService {
     }
 
     // 전체 강의실 조회
-    public List<ClassroomResponseDto> getAllClassrooms() {
+    public List<ClassroomResponseDto> getAllClassrooms(Pageable pageable) {
         try {
-            return classroomRepository.findAllWithJoins().stream()
+            return classroomRepository.findAllWithJoins(pageable).stream()
                     .map(this::toClassroomResponseDto)
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -104,13 +104,13 @@ public class ClassroomService {
                     case "created":
                         return classroomRepository.findCreatedClassrooms(categoryId, userId, pageable);
                     default:
-                        return getAllClassrooms();
+                        return getAllClassrooms(pageable);
                 }
             }
 
             return categoryId != null
                     ? classroomRepository.findClassroomsByCategoryId(categoryId, pageable)
-                    : getAllClassrooms();
+                    : getAllClassrooms(pageable);
         } catch (Exception e) {
             Sentry.captureException(e);
             throw e;
