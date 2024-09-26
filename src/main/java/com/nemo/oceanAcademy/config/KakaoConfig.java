@@ -21,9 +21,7 @@ public class KakaoConfig {
         return kakaoClientId;
     }
 
-    public String getLocalRedirectUri() {
-        return redirectLocalUri;
-    }
+    public String getLocalRedirectUri() { return redirectLocalUri; }
 
     public String getServerRedirectUri() {
         return redirectServerUri;

@@ -61,6 +61,9 @@ public class OAuth2AuthService {
                     throw new IllegalArgumentException("잘못된 환경: " + environment);
             }
 
+            // 로그로 확인
+            System.out.println("환경: " + environment + ", 리다이렉트 URI: " + redirectUri);
+
             String tokenUrl = "https://kauth.kakao.com/oauth/token?grant_type=authorization_code" +
                     "&client_id=" + clientId +
                     "&redirect_uri=" + redirectUri +
@@ -73,7 +76,6 @@ public class OAuth2AuthService {
             throw new RuntimeException("카카오 액세스 토큰을 가져오는 중 오류가 발생했습니다.", e);
         }
     }
-
 
     // 액세스 토큰 추출 로직
     private String extractAccessToken(String responseBody) {
