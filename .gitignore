@@ -5,6 +5,7 @@ src/main/resources/static/*
 !src/main/resources/static/image.txt
 migration_script.sh
 rds_backup.sql
+oceanacademydb_backup.sql
 
 *.env
 
