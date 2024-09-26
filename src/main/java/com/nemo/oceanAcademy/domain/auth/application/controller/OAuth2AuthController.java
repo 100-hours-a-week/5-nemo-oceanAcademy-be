@@ -60,8 +60,7 @@ public class OAuth2AuthController {
             String environment;
             if ((referer != null && referer.contains("localhost")) || (origin != null && origin.contains("localhost"))) {
                 environment = "local";
-            } else if ((referer != null && referer.contains("dev.nemooceanacademy.com")) ||
-                    (origin != null && origin.contains("dev.nemooceanacademy.com"))) {
+            } else if ((referer != null && referer.contains("dev.nemooceanacademy.com")) || (origin != null && origin.contains("dev.nemooceanacademy.com"))) {
                 environment = "dev";
             } else {
                 environment = "prod";
