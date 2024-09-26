@@ -9,17 +9,18 @@ public class SubdomainRoutingDataSource extends AbstractRoutingDataSource {
 
     @Override
     protected Object determineCurrentLookupKey() {
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        String host = request.getServerName();  // 서브 도메인을 감지
-        System.out.println("Detected host: " + host);
+        // RequestContextHolder를 통해 현재 HTTP 요청 컨텍스트가 있는지 확인
+        if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes) {
+            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+            String host = request.getServerName();  // 서브도메인을 감지
 
-        if (host.startsWith("dev.") || "localhost".equals(host)) {
             // dev 서브 도메인이거나 로컬 환경이면 dev 데이터베이스 사용
-            return "dev";
-        } else {
-            // 운영용 DB 사용
-            return "prod";
+            if (host.startsWith("dev.") || "localhost".equals(host)) {
+                return "dev";
+            }
         }
+        // HTTP 요청이 없거나 기본적으로 prod 데이터베이스 사용
+        return "prod";
     }
 }
 
