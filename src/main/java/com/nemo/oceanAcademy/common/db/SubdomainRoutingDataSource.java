@@ -12,19 +12,30 @@ public class SubdomainRoutingDataSource extends AbstractRoutingDataSource {
         // RequestContextHolder를 통해 현재 HTTP 요청 컨텍스트가 있는지 확인
         if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes) {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            String host = request.getServerName();  // 서브도메인을 감지
+            String host = request.getServerName();  // 서버 네임을 감지
+
+            if (host == null || host.isEmpty()) {
+                throw new IllegalStateException("서버 호스트 정보를 찾을 수 없습니다.");
+            }
+            System.out.println("도메인:" + host);
 
             // dev 서브 도메인이거나 로컬 환경이면 dev 데이터베이스 사용
             if (host.startsWith("dev.") || "localhost".equals(host)) {
                 return "dev";
             }
-            // prod 서브 도메인이면 prod 데이터베이스 사용
-            if (host.startsWith("www.") || host.endsWith("nemooceanacademy.com")) {
+
+            // www.nemooceanacademy.com일 때 prod 데이터베이스 사용
+            if ("www.nemooceanacademy.com".equals(host)) {
                 return "prod";
             }
+
+            // 호스트가 예상 범위 내에 없는 경우 기본 prod로 설정
+            throw new IllegalStateException("서브 도메인에 맞는 데이터베이스를 찾을 수 없습니다. 호스트: " + host);
         }
-        // 기본 데이터베이스가 없도록 하고, 오류 발생 시 예외 처리
-        throw new IllegalStateException("서브 도메인에 맞는 데이터베이스를 찾을 수 없습니다.");
+
+        // HTTP 요청 컨텍스트가 없으면 예외 발생
+        throw new IllegalStateException("HTTP 요청 컨텍스트가 존재하지 않습니다.");
     }
+
 }
 
