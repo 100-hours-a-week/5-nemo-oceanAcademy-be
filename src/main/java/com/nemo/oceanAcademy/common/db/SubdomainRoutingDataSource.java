@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.common.db;
+
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -17,7 +18,8 @@ public class SubdomainRoutingDataSource extends AbstractRoutingDataSource {
             if (host == null || host.isEmpty()) {
                 throw new IllegalStateException("서버 호스트 정보를 찾을 수 없습니다.");
             }
-            System.out.println("도메인:" + host);
+
+            System.out.println("도메인: " + host);
 
             // dev 서브 도메인이거나 로컬 환경이면 dev 데이터베이스 사용
             if (host.startsWith("dev.") || "localhost".equals(host)) {
@@ -30,12 +32,10 @@ public class SubdomainRoutingDataSource extends AbstractRoutingDataSource {
             }
 
             // 호스트가 예상 범위 내에 없는 경우 기본 prod로 설정
-            throw new IllegalStateException("서브 도메인에 맞는 데이터베이스를 찾을 수 없습니다. 호스트: " + host);
+            return null;
         }
 
-        // HTTP 요청 컨텍스트가 없으면 예외 발생
-        throw new IllegalStateException("HTTP 요청 컨텍스트가 존재하지 않습니다.");
+        // HTTP 요청 컨텍스트가 없으면 기본 데이터베이스 사용 (기본 datasource 아래 설정 사용)
+        return null;
     }
-
 }
-
