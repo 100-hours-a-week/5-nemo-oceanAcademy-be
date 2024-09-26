@@ -14,6 +14,9 @@ public class KakaoConfig {
     @Value("${kakao.redirect-server-uri}")
     private String redirectServerUri;
 
+    @Value("${kakao.redirect-dev-uri}")
+    private String redirectDevUri;
+
     public String getKakaoClientId() {
         return kakaoClientId;
     }
@@ -25,5 +28,7 @@ public class KakaoConfig {
     public String getServerRedirectUri() {
         return redirectServerUri;
     }
+
+    public String getDevRedirectUri() { return redirectDevUri; }
 }
 

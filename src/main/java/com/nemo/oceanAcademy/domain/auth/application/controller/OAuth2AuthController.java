@@ -56,14 +56,21 @@ public class OAuth2AuthController {
             @RequestHeader(value = "Referer", required = false) String referer,
             @RequestHeader(value = "Origin", required = false) String origin) {
         try {
-            // 로컬 환경인지 운영 환경인지 판단
-            boolean isLocal = (referer != null && referer.contains("localhost")) ||
-                    (origin != null && origin.contains("localhost"));
+            // 환경에 따른 로컬 & 개발 & 프로덕션 구분
+            String environment;
+            if ((referer != null && referer.contains("localhost")) || (origin != null && origin.contains("localhost"))) {
+                environment = "local";
+            } else if ((referer != null && referer.contains("dev.nemooceanacademy.com")) ||
+                    (origin != null && origin.contains("dev.nemooceanacademy.com"))) {
+                environment = "dev";
+            } else {
+                environment = "prod";
+            }
 
-            System.out.println("isLocal" + isLocal);
+            System.out.println("Current Environment: " + environment);
 
             // 카카오 액세스 토큰 요청 및 사용자 정보 가져오기
-            String kakaoAccessToken = authService.getKakaoAccessToken(code, isLocal);
+            String kakaoAccessToken = authService.getKakaoAccessToken(code, environment);
             Map<String, Object> kakaoUserInfo = authService.getKakaoUserInfo(kakaoAccessToken);
 
             // 사용자 식별값 추출
@@ -84,7 +91,6 @@ public class OAuth2AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
-
 
     /* ----------------------------------------------------------------- */
 
