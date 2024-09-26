@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.common.db;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -21,8 +22,9 @@ public class DataSourceConfig {
         dataSourceMap.put("dev", createDataSource("dev"));
         dataSourceMap.put("prod", createDataSource("prod"));
 
-        // 데이터베이스 맵을 서브 도메인 기반으로 설정
+        // 기본적으로 prod 데이터베이스를 사용
         routingDataSource.setTargetDataSources(dataSourceMap);
+        routingDataSource.setDefaultTargetDataSource(createDataSource("prod"));  // 기본 데이터베이스 설정
 
         return routingDataSource;
     }
