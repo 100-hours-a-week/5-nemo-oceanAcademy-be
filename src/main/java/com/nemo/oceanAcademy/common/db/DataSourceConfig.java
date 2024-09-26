@@ -28,7 +28,11 @@ public class DataSourceConfig {
     }
 
     private DataSource createDataSource(String profile) {
-        DatabaseProperties.DbConfig dbConfig = profile.equals("dev") ? databaseProperties.getDev() : databaseProperties.getProd();
+        DatabaseProperties.DbConfig dbConfig = "dev".equals(profile) ? databaseProperties.getDev() : databaseProperties.getProd();
+
+        if (dbConfig == null) {
+            throw new IllegalStateException("Database configuration for profile " + profile + " is missing");
+        }
 
         return DataSourceBuilder.create()
                 .url(dbConfig.getUrl())
