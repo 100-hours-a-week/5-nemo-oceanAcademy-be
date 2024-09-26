@@ -18,9 +18,13 @@ public class SubdomainRoutingDataSource extends AbstractRoutingDataSource {
             if (host.startsWith("dev.") || "localhost".equals(host)) {
                 return "dev";
             }
+            // prod 서브 도메인이면 prod 데이터베이스 사용
+            if (host.startsWith("www.") || host.endsWith("nemooceanacademy.com")) {
+                return "prod";
+            }
         }
-        // HTTP 요청이 없거나 기본적으로 prod 데이터베이스 사용
-        return "prod";
+        // 기본 데이터베이스가 없도록 하고, 오류 발생 시 예외 처리
+        throw new IllegalStateException("서브 도메인에 맞는 데이터베이스를 찾을 수 없습니다.");
     }
 }
 

@@ -21,9 +21,8 @@ public class DataSourceConfig {
         dataSourceMap.put("dev", createDataSource("dev"));
         dataSourceMap.put("prod", createDataSource("prod"));
 
-        // 기본적으로 prod 데이터베이스를 사용
+        // 데이터베이스 맵을 서브 도메인 기반으로 설정
         routingDataSource.setTargetDataSources(dataSourceMap);
-        routingDataSource.setDefaultTargetDataSource(createDataSource("prod"));
 
         return routingDataSource;
     }
