@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - main
 
 jobs:
   build:
@@ -19,10 +20,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Sentry Auth Token
+      - name: Sentry Auth Token 설정
         run: echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> $GITHUB_ENV
 
-      - name: Enable Sentry CLI Debug Logs
+      - name: Sentry CLI Debug Logs 설정
         run: echo "SENTRY_LOG_LEVEL=debug" >> $GITHUB_ENV
 
       - name: Build with Gradle
@@ -32,17 +33,25 @@ jobs:
           SENTRY_ORG: ktb-0402
           SENTRY_PROJECT: java-spring-boot
 
-      - name: Docker Hub에 로그인
+      - name: Docker Hub 로그인
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Docker image
+      - name: (main 브랜치) 도커 이미지 빌드 및 Push
+        if: github.ref == 'refs/heads/main'
         run: |
           docker build -t nemo-be:${{ github.sha }} .
           docker tag nemo-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
           docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
+
+      - name: (develop 브랜치) 도커 이미지 빌드 및 Push
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          docker build -t nemo-dev-be:${{ github.sha }} .
+          docker tag nemo-dev-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -55,39 +64,71 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 700 ~/.ssh
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts || true
+          ssh-keyscan -H ${{ secrets.MAIN_SERVER_HOST }} >> ~/.ssh/known_hosts || true
+          ssh-keyscan -H ${{ secrets.DEV_SERVER_HOST }} >> ~/.ssh/known_hosts || true
 
-      - name: 서버에 SSH 접속 및 `application.yml` 파일 생성
+      - name: (main 브랜치) EC2 배포 - Blue/Green 실행 (prod 프로파일)
+        if: github.ref == 'refs/heads/main'
         uses: appleboy/ssh-action@v0.1.6
         with:
-          host: ${{ secrets.SERVER_HOST }}
+          host: ${{ secrets.MAIN_SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # application.yml 파일 생성
             mkdir -p ~/app/config/
             echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
-
-      - name: 서버에 Docker 컨테이너 배포
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }} && \
-            docker stop nemo-be || true && \
-            docker rm nemo-be || true && \
+            
+            # 기존 컨테이너 중지 및 삭제 (이미 실행 중일 경우)
+            docker stop nemo-be || true
+            docker rm nemo-be || true
+            
+            # 도커 실행
             docker run -d -p 5000:8080 --name nemo-be \
               -v ~/app/config/application.yml:/app/application.yml \
+              -e SPRING_PROFILES_ACTIVE=prod \
               -e FILE_UPLOAD_DIR=/app/static \
               ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
 
-      - name: Docker 컨테이너 로그 출력
+      - name: (develop 브랜치) EC2 배포 - 개발 환경 실행 (dev 프로파일)
+        if: github.ref == 'refs/heads/develop'
         uses: appleboy/ssh-action@v0.1.6
         with:
-          host: ${{ secrets.SERVER_HOST }}
+          host: ${{ secrets.DEV_SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "Docker 컨테이너 로그 출력" && \
-            docker logs nemo-be
+            # application.yml 파일 생성
+            mkdir -p ~/app/config/
+            echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
+
+            # 기존 컨테이너 중지 및 삭제 (이미 실행 중일 경우)
+            docker stop nemo-dev-be || true
+            docker rm nemo-dev-be || true
+
+            # 도커 실행
+            docker run -d -p 5000:8080 --name nemo-dev-be \
+              -v ~/app/config/application.yml:/app/application.yml \
+              -e SPRING_PROFILES_ACTIVE=dev \
+              -e FILE_UPLOAD_DIR=/app/static \
+              ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
+
+      - name: Docker 컨테이너 로그 출력 (main 브랜치)
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.MAIN_SERVER_HOST }}  # MAIN 서버
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker logs nemo-be || true
+
+      - name: Docker 컨테이너 로그 출력 (develop 브랜치)
+        if: github.ref == 'refs/heads/develop'
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.DEV_SERVER_HOST }}   # DEV 서버
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker logs nemo-dev-be || true
