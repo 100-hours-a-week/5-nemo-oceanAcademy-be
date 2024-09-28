@@ -65,7 +65,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             mkdir -p ~/app/config/
-            echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
+            echo "${{ secrets.APPLICATION_YML_PROD }}" > ~/app/config/application.yml
 
       - name: 서버에 Docker 컨테이너 배포
         uses: appleboy/ssh-action@v0.1.6
