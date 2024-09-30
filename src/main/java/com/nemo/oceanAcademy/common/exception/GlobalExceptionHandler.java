@@ -161,6 +161,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    // 수강 정원 초과 오류
+    @ExceptionHandler(ClassFullException.class)
+    public ResponseEntity<Map<String, Object>> handleClassFullException(ClassFullException ex) {
+        Map<String, Object> errorResponse = createErrorResponse(
+                "수강 인원이 초과 되었습니다.",
+                "Class Capacity Exceeded",
+                HttpStatus.CONFLICT,
+                "conflict",
+                "error"
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
     // 공통 응답 생성 메서드 (한국어 + 영어 메시지 모두 지원)
     private Map<String, Object> createErrorResponse(String messageKor, String messageEng, HttpStatus status, String errorType, String data) {
         Map<String, Object> response = new HashMap<>();
