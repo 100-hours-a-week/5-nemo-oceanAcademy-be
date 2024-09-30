@@ -1,4 +1,5 @@
 package com.nemo.oceanAcademy.domain.classroom.application.service;
+import com.nemo.oceanAcademy.common.exception.ClassFullException;
 import com.nemo.oceanAcademy.common.s3.S3ImageUtils;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.*;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
@@ -57,6 +58,7 @@ public class ClassroomService {
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
     private final S3ImageUtils imageUtils;
+    long MAX_PARTICIPANT = 50L;
 
 
     // 공통 변환 메서드
@@ -362,6 +364,12 @@ public class ClassroomService {
                     .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + userId + ")의 사용자를 찾을 수 없습니다.", "User not found"));
             Classroom classroom = classroomRepository.findById(classId)
                     .orElseThrow(() -> new ResourceNotFoundException("해당하는 ID(" + classId + ")의 강의를 찾을 수 없습니다.", "Classroom not found"));
+
+            // 수강 정원 확인
+            long participantCount = participantRepository.countParticipantsInClassroom(classId);
+            if (participantCount >= MAX_PARTICIPANT) {
+                throw new ClassFullException("해당하는 ID(" + classId + ")의 강의 정원이 초과되었습니다.", "Classroom Full");
+            }
 
             Participant participant = Participant.builder()
                     .user(user)
