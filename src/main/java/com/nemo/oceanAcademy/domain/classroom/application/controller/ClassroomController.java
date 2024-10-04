@@ -65,7 +65,7 @@ public class ClassroomController {
             userId = getAuthenticatedUserId(request);
         }
 
-        List<ClassroomResponseDto> classrooms = classroomService.getFilteredClassrooms(target, categoryId, userId, page, 10);
+        List<ClassroomResponseDto> classrooms = classroomService.getFilteredClassrooms(target, categoryId, userId, page, 12);
         return ApiResponse.success("강의실 목록 조회 성공", "Classrooms retrieved successfully", classrooms);
     }
 
