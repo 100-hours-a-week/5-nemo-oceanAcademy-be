@@ -166,6 +166,13 @@ public class ClassroomService {
 
             // 업데이트
             if (classroomUpdateDto.getName() != null) classroom.setName(classroomUpdateDto.getName());
+            if (classroomUpdateDto.getCategoryId() != null) {
+                Integer categoryId = classroomUpdateDto.getCategoryId();
+                // Category 객체를 Repository를 통해 조회
+                Category category = categoryRepository.findById(categoryId)
+                        .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+                classroom.setCategory(category); // 조회된 Category 객체를 classroom에 설정
+            }
             if (classroomUpdateDto.getObject() != null) classroom.setObject(classroomUpdateDto.getObject());
             if (classroomUpdateDto.getDescription() != null) classroom.setDescription(classroomUpdateDto.getDescription());
             if (classroomUpdateDto.getIsActive() != null) classroom.setIsActive(classroomUpdateDto.getIsActive());
