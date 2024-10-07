@@ -87,10 +87,18 @@ jobs:
               NEW_CONTAINER_NAME="nemo-green-be"
               NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_GREEN_TARGET_GROUP_ARN }}  # Main Green 대상 그룹 ARN
             else
-              echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
-              NEW_PORT=5000
-              NEW_CONTAINER_NAME="nemo-blue-be"
-              NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}  # Main Blue 대상 그룹 ARN
+              EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-be" --filter "status=running" --format "{{.Names}}")
+              if [ -n "$EXISTING_CONTAINER" ]; then
+                echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
+                NEW_PORT=5000
+                NEW_CONTAINER_NAME="nemo-blue-be"
+                NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}  # Main Blue 대상 그룹 ARN
+              else
+                echo "실행 중인 서버가 없으므로 기본적으로 Blue 서버를 실행합니다."
+                NEW_PORT=5000
+                NEW_CONTAINER_NAME="nemo-blue-be"
+                NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}  # Main Blue 대상 그룹 ARN
+              fi
             fi
             
             # 새로운 컨테이너 실행
@@ -144,16 +152,21 @@ jobs:
               exit 1
             fi
             
-            # 이전 서버 중지
-            EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-be" --filter "status=running" --format "{{.Names}}")
-            if [ -n "$EXISTING_CONTAINER" ]; then
+            # 이전 서버 중지 (이전 서버가 있는 경우에만 중지)
+            EXISTING_GREEN_CONTAINER=$(docker ps --filter "name=nemo-green-be" --filter "status=running" --format "{{.Names}}")
+            EXISTING_BLUE_CONTAINER=$(docker ps --filter "name=nemo-blue-be" --filter "status=running" --format "{{.Names}}")
+
+            if [ -n "$EXISTING_GREEN_CONTAINER" ]; then
               echo "Green 서버가 실행 중이므로 종료합니다."
               docker stop nemo-green-be
               docker rm nemo-green-be
-            else
+            elif [ -n "$EXISTING_BLUE_CONTAINER" ]; then
               echo "Blue 서버가 실행 중이므로 종료합니다."
               docker stop nemo-blue-be
               docker rm nemo-blue-be
+            else
+              echo "실행 중인 이전 서버가 없습니다. 종료할 서버가 없습니다."
+            fi
 
       - name: (develop 브랜치) EC2 배포 - Blue/Green 서버 실행 (dev 프로파일)
         if: github.ref == 'refs/heads/develop'
@@ -167,7 +180,7 @@ jobs:
             mkdir -p ~/app/config/
             echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
             
-            # Green 또는 Blue 서버를 실행할 포트 선택 및 대상 그룹 설정 (Dev 환경)
+            # Green 또는 Blue 서버를 실행할 포트 선택 및 대상 그룹 설정 (Main 환경)
             EXISTING_CONTAINER=$(docker ps --filter "name=nemo-blue-dev" --filter "status=running" --format "{{.Names}}")
             if [ -n "$EXISTING_CONTAINER" ]; then
               echo "Blue 서버가 실행 중이므로 Green 서버를 실행합니다."
@@ -175,10 +188,18 @@ jobs:
               NEW_CONTAINER_NAME="nemo-green-dev"
               NEW_TARGET_GROUP_ARN=${{ secrets.DEV_GREEN_TARGET_GROUP_ARN }}  # Dev Green 대상 그룹 ARN
             else
-              echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
-              NEW_PORT=5000
-              NEW_CONTAINER_NAME="nemo-blue-dev"
-              NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}  # Dev Blue 대상 그룹 ARN
+              EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-be" --filter "status=running" --format "{{.Names}}")
+              if [ -n "$EXISTING_CONTAINER" ]; then
+                echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
+                NEW_PORT=5000
+                NEW_CONTAINER_NAME="nemo-blue-dev"
+                NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}  # Dev Blue 대상 그룹 ARN
+              else
+                echo "실행 중인 서버가 없으므로 기본적으로 Blue 서버를 실행합니다."
+                NEW_PORT=5000
+                NEW_CONTAINER_NAME="nemo-blue-dev"
+                NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}  # Dev Blue 대상 그룹 ARN
+              fi
             fi
             
             # 새로운 컨테이너 실행
@@ -230,18 +251,23 @@ jobs:
             if [ "$SUCCESS_COUNT" -lt 3 ]; then
               echo "트래픽 전환이 완료되지 않았습니다. 이전 서버 종료를 중지합니다."
               exit 1
-            fi
+            fi            
             
-            # 이전 서버 중지
-            EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-dev" --filter "status=running" --format "{{.Names}}")
-            if [ -n "$EXISTING_CONTAINER" ]; then
+            # 이전 서버 중지 (이전 서버가 있는 경우에만 중지)
+            EXISTING_GREEN_CONTAINER=$(docker ps --filter "name=nemo-green-dev" --filter "status=running" --format "{{.Names}}")
+            EXISTING_BLUE_CONTAINER=$(docker ps --filter "name=nemo-blue-dev" --filter "status=running" --format "{{.Names}}")
+
+            if [ -n "$EXISTING_GREEN_CONTAINER" ]; then
               echo "Green 서버가 실행 중이므로 종료합니다."
               docker stop nemo-green-dev
               docker rm nemo-green-dev
-            else
+            elif [ -n "$EXISTING_BLUE_CONTAINER" ]; then
               echo "Blue 서버가 실행 중이므로 종료합니다."
               docker stop nemo-blue-dev
               docker rm nemo-blue-dev
+            else
+              echo "실행 중인 이전 서버가 없습니다. 종료할 서버가 없습니다."
+            fi
 
       - name: Docker 컨테이너 로그 출력 (main 브랜치 - Blue/Green 서버)
         if: github.ref == 'refs/heads/main'
