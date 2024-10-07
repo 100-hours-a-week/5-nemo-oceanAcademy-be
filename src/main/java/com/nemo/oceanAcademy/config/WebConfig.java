@@ -17,7 +17,9 @@ public class WebConfig implements WebMvcConfigurer {
                                 "http://nemooceanacademy.com",
                                 "https://nemooceanacademy.com",
                                 "http://www.nemooceanacademy.com",
-                                "https://www.nemooceanacademy.com"
+                                "https://www.nemooceanacademy.com",
+                                "http://dev.nemooceanacademy.com",
+                                "https://dev.nemooceanacademy.com"
                 )
 
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
