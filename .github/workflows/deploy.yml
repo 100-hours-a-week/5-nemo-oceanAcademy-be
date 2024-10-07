@@ -188,7 +188,7 @@ jobs:
               NEW_CONTAINER_NAME="nemo-green-dev"
               NEW_TARGET_GROUP_ARN=${{ secrets.DEV_GREEN_TARGET_GROUP_ARN }}  # Dev Green 대상 그룹 ARN
             else
-              EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-be" --filter "status=running" --format "{{.Names}}")
+              EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-dev" --filter "status=running" --format "{{.Names}}")
               if [ -n "$EXISTING_CONTAINER" ]; then
                 echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
                 NEW_PORT=5000
@@ -207,7 +207,7 @@ jobs:
               -v ~/app/config/application.yml:/app/application.yml \
               -e SPRING_PROFILES_ACTIVE=dev \
               -e FILE_UPLOAD_DIR=/app/static \
-              ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
+              ${{ secrets.DOCKER_USERNAME }}/nemo-dev-dev:${{ github.sha }}
 
       - name: ALB 트래픽 전환 및 헬스체크 (develop 브랜치)
         if: github.ref == 'refs/heads/develop'
