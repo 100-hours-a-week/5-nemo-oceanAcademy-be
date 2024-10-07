@@ -7,6 +7,7 @@ src/main/resources/static/*
 migration_script.sh
 rds_backup.sql
 oceanacademydb_backup.sql
+docker-compose.yml
 nginx
 *.env
 
