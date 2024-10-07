@@ -1,24 +1,37 @@
 package com.nemo.oceanAcademy.common.aop;
 
+import com.nemo.oceanAcademy.common.log.dataAccess.entity.ExecutionTime;
+import com.nemo.oceanAcademy.common.log.dataAccess.repository.ExecutionTimeRepository;
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class TimeTraceAop {
 
-    @Around("execution(* com.nemo.oceanAcademy..*(..))") // 패키지 하위에 모두 적용
+    private final ExecutionTimeRepository executionTimeRepository;
+
+    @Around("execution(* com.nemo.oceanAcademy.domain..*(..))") // 패키지 하위에 모두 적용
     public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
         long start = System.currentTimeMillis();
-        System.out.println("Start: " + joinPoint.toString());
         try {
             return joinPoint.proceed(); // 다음 로직으로 넘어간다.
         } finally {
             long finish = System.currentTimeMillis();
-            long timeMs = finish - start;
-            System.out.println("End: " + joinPoint.toString() + " " + timeMs + "ms");
+            long executionTime = finish - start;
+            ExecutionTime ex = ExecutionTime.builder()
+                    .methodName(joinPoint.getSignature().getDeclaringTypeName()
+                            + "." + joinPoint.getSignature().getName())
+                    .executionTime(executionTime)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+            executionTimeRepository.save(ex);
         }
     }
 }

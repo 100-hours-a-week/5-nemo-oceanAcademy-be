@@ -15,9 +15,9 @@ public class SentryConfiguration {
     public void init() {
         Sentry.init(options -> {
             options.setDsn(dsn);
-            options.setDebug(true);                 // 디버깅 모드 활성화
+            options.setDebug(false);                 // 디버깅 모드 활성화
             options.setTracesSampleRate(1.0);       // 성능 모니터링 샘플링 비율 설정 (0.0 - 1.0)
-            options.setAttachStacktrace(true);      // 스택 트레이스 포함
+            options.setAttachStacktrace(false);      // 스택 트레이스 포함
         });
 
         // Sentry 초기화가 완료된 후 테스트 예외 발생
