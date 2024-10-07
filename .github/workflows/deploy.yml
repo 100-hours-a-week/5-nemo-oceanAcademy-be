@@ -207,7 +207,7 @@ jobs:
               -v ~/app/config/application.yml:/app/application.yml \
               -e SPRING_PROFILES_ACTIVE=dev \
               -e FILE_UPLOAD_DIR=/app/static \
-              ${{ secrets.DOCKER_USERNAME }}/nemo-dev-dev:${{ github.sha }}
+              ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
 
       - name: ALB 트래픽 전환 및 헬스체크 (develop 브랜치)
         if: github.ref == 'refs/heads/develop'
