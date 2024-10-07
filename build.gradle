@@ -88,6 +88,9 @@ dependencies {
 
 	implementation 'org.springframework.security:spring-security-messaging'
 
+	// Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 }
 
 tasks.named('test') {
