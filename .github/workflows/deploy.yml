@@ -109,7 +109,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             # ALB에서 타겟 그룹을 새로운 대상 그룹으로 전환 (Main 환경)
-            aws elbv2 modify-listener --listener-arn <ALB_Listener_ARN> \
+            aws elbv2 modify-listener --listener-arn ${{ secrets.MAIN_ALB_LISTENER_ARN }} \
               --default-actions Type=forward,TargetGroupArn=$NEW_TARGET_GROUP_ARN
             
             # Health Check 상태를 확인
@@ -197,7 +197,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             # ALB에서 타겟 그룹을 새로운 대상 그룹으로 전환 (Dev 환경)
-            aws elbv2 modify-listener --listener-arn <ALB_Listener_ARN> \
+            aws elbv2 modify-listener --listener-arn ${{ secrets.DEV_ALB_LISTENER_ARN }} \
               --default-actions Type=forward,TargetGroupArn=$NEW_TARGET_GROUP_ARN
             
             # Health Check 상태를 확인
