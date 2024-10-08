@@ -88,7 +88,7 @@ jobs:
           else
             NEW_PORT=5000
             NEW_CONTAINER_NAME="nemo-blue"
-            echo "Blue 서버가 실행 중이지 않으므로 Blue 서버를 실행합니다."
+            echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
           fi
 
           # 새로운 컨테이너 실행
