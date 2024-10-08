@@ -20,12 +20,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Sentry Auth Token 설정
-        run: echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> $GITHUB_ENV
-
-      - name: Sentry CLI Debug Logs 설정
-        run: echo "SENTRY_LOG_LEVEL=debug" >> $GITHUB_ENV
-
       - name: Build with Gradle
         run: ./gradlew clean build
         env:
@@ -39,19 +33,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: (main 브랜치) 도커 이미지 빌드 및 Push
-        if: github.ref == 'refs/heads/main'
+      - name: 도커 이미지 빌드 및 Push (브랜치별 구분)
         run: |
-          docker build -t nemo-be:${{ github.sha }} .
-          docker tag nemo-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
-
-      - name: (develop 브랜치) 도커 이미지 빌드 및 Push
-        if: github.ref == 'refs/heads/develop'
-        run: |
-          docker build -t nemo-dev-be:${{ github.sha }} .
-          docker tag nemo-dev-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            docker build -t nemo-be:${{ github.sha }} .
+            docker tag nemo-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
+            docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            docker build -t nemo-dev-be:${{ github.sha }} .
+            docker tag nemo-dev-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
+            docker push ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
+          fi
 
   deploy:
     runs-on: ubuntu-latest
@@ -67,238 +59,80 @@ jobs:
           ssh-keyscan -H ${{ secrets.MAIN_SERVER_HOST }} >> ~/.ssh/known_hosts || true
           ssh-keyscan -H ${{ secrets.DEV_SERVER_HOST }} >> ~/.ssh/known_hosts || true
 
-      - name: (main 브랜치) EC2 배포 - Blue/Green 서버 실행 (prod 프로파일)
-        if: github.ref == 'refs/heads/main'
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.MAIN_SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # application.yml 파일 생성
-            mkdir -p ~/app/config/
-            echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
-            
-            # Green 또는 Blue 서버를 실행할 포트 선택 및 대상 그룹 설정 (Main 환경)
-            EXISTING_CONTAINER=$(docker ps --filter "name=nemo-blue-be" --filter "status=running" --format "{{.Names}}")
-            if [ -n "$EXISTING_CONTAINER" ]; then
-              echo "Blue 서버가 실행 중이므로 Green 서버를 실행합니다."
-              NEW_PORT=5001
-              NEW_CONTAINER_NAME="nemo-green-be"
-              NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_GREEN_TARGET_GROUP_ARN }}  # Main Green 대상 그룹 ARN
-            else
-              EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-be" --filter "status=running" --format "{{.Names}}")
-              if [ -n "$EXISTING_CONTAINER" ]; then
-                echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
-                NEW_PORT=5000
-                NEW_CONTAINER_NAME="nemo-blue-be"
-                NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}  # Main Blue 대상 그룹 ARN
-              else
-                echo "실행 중인 서버가 없으므로 기본적으로 Blue 서버를 실행합니다."
-                NEW_PORT=5000
-                NEW_CONTAINER_NAME="nemo-blue-be"
-                NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}  # Main Blue 대상 그룹 ARN
-              fi
+      - name: EC2 배포 - Blue/Green 서버 실행 (브랜치별)
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            SERVER_HOST=${{ secrets.MAIN_SERVER_HOST }}
+            NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}
+            LISTENER_ARN=${{ secrets.MAIN_ALB_LISTENER_ARN }}
+            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}"
+            SPRING_PROFILE=prod
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            SERVER_HOST=${{ secrets.DEV_SERVER_HOST }}
+            NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}
+            LISTENER_ARN=${{ secrets.DEV_ALB_LISTENER_ARN }}
+            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}"
+            SPRING_PROFILE=dev
+          fi
+
+          # application.yml 파일 생성
+          mkdir -p ~/app/config/
+          echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
+
+          # Green 또는 Blue 서버 실행 여부 확인
+          EXISTING_CONTAINER=$(docker ps --filter "name=nemo-blue" --filter "status=running" --format "{{.Names}}")
+          if [ -n "$EXISTING_CONTAINER" ]; then
+            NEW_PORT=5001
+            NEW_CONTAINER_NAME="nemo-green"
+            echo "Blue 서버가 실행 중이므로 Green 서버를 실행합니다."
+          else
+            NEW_PORT=5000
+            NEW_CONTAINER_NAME="nemo-blue"
+            echo "Blue 서버가 실행 중이지 않으므로 Blue 서버를 실행합니다."
+          fi
+
+          # 새로운 컨테이너 실행
+          docker run -d -p $NEW_PORT:8080 --name $NEW_CONTAINER_NAME \
+            -v ~/app/config/application.yml:/app/application.yml \
+            -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILE \
+            $IMAGE_NAME
+
+      - name: ALB 트래픽 전환 및 헬스체크 (브랜치별)
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}
+            LISTENER_ARN=${{ secrets.MAIN_ALB_LISTENER_ARN }}
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}
+            LISTENER_ARN=${{ secrets.DEV_ALB_LISTENER_ARN }}
+          fi
+
+          # ALB에서 타겟 그룹을 새로운 대상 그룹으로 전환
+          aws elbv2 modify-listener --listener-arn $LISTENER_ARN \
+            --default-actions Type=forward,TargetGroupArn=$NEW_TARGET_GROUP_ARN
+
+          # Health Check 상태를 확인
+          for ((i=1; i<=5; i++)); do
+            echo "헬스 체크 상태 확인: $i 번째 시도"
+            HEALTHY_HOST_COUNT=$(aws elbv2 describe-target-health --target-group-arn $NEW_TARGET_GROUP_ARN --query 'TargetHealthDescriptions[?TargetHealth.State==`healthy`]' | jq length)
+            if [ "$HEALTHY_HOST_COUNT" -gt 1 ]; then
+              echo "서버가 충분한 트래픽을 처리 중입니다."
+              break
             fi
-            
-            # 새로운 컨테이너 실행
-            docker run -d -p $NEW_PORT:8080 --name $NEW_CONTAINER_NAME \
-              -v ~/app/config/application.yml:/app/application.yml \
-              -e SPRING_PROFILES_ACTIVE=prod \
-              -e FILE_UPLOAD_DIR=/app/static \
-              ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
+            sleep 10
+          done
 
-      - name: ALB 트래픽 전환 및 헬스체크 (main 브랜치)
-        if: github.ref == 'refs/heads/main'
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.MAIN_SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # ALB에서 타겟 그룹을 새로운 대상 그룹으로 전환 (Main 환경)
-            aws elbv2 modify-listener --listener-arn ${{ secrets.MAIN_ALB_LISTENER_ARN }} \
-              --default-actions Type=forward,TargetGroupArn=$NEW_TARGET_GROUP_ARN
-            
-            # Health Check 상태를 확인
-            RETRY_LIMIT=5
-            RETRY_INTERVAL=10
-            SUCCESS_COUNT=0
-            
-            for ((i=1; i<=RETRY_LIMIT; i++))
-            do
-              echo "트래픽 상태 확인: $i 번째 시도"
-            
-              HEALTHY_HOST_COUNT=$(aws elbv2 describe-target-health --target-group-arn $NEW_TARGET_GROUP_ARN --query 'TargetHealthDescriptions[?TargetHealth.State==`healthy`]' | jq length)
-            
-              if [ "$HEALTHY_HOST_COUNT" -gt 1 ]; then
-                echo "서버가 충분한 트래픽을 처리하고 있습니다."
-                SUCCESS_COUNT=$((SUCCESS_COUNT+1))
-            
-                if [ "$SUCCESS_COUNT" -eq 3 ]; then
-                  echo "트래픽이 안정되었으므로 이전 서버 종료를 준비합니다."
-                  break
-                fi
-              else
-                echo "서버가 준비되지 않았습니다. 다시 확인합니다."
-                SUCCESS_COUNT=0
-              fi
-            
-              sleep $RETRY_INTERVAL
-            done
-            
-            if [ "$SUCCESS_COUNT" -lt 3 ]; then
-              echo "트래픽 전환이 완료되지 않았습니다. 이전 서버 종료를 중지합니다."
-              exit 1
-            fi
-            
-            # 이전 서버 중지 (이전 서버가 있는 경우에만 중지)
-            EXISTING_GREEN_CONTAINER=$(docker ps --filter "name=nemo-green-be" --filter "status=running" --format "{{.Names}}")
-            EXISTING_BLUE_CONTAINER=$(docker ps --filter "name=nemo-blue-be" --filter "status=running" --format "{{.Names}}")
-
-            if [ -n "$EXISTING_GREEN_CONTAINER" ]; then
-              echo "Green 서버가 실행 중이므로 종료합니다."
-              docker stop nemo-green-be
-              docker rm nemo-green-be
-            elif [ -n "$EXISTING_BLUE_CONTAINER" ]; then
-              echo "Blue 서버가 실행 중이므로 종료합니다."
-              docker stop nemo-blue-be
-              docker rm nemo-blue-be
-            else
-              echo "실행 중인 이전 서버가 없습니다. 종료할 서버가 없습니다."
-            fi
-
-      - name: (develop 브랜치) EC2 배포 - Blue/Green 서버 실행 (dev 프로파일)
-        if: github.ref == 'refs/heads/develop'
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.DEV_SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # application.yml 파일 생성
-            mkdir -p ~/app/config/
-            echo "${{ secrets.APPLICATION_YML }}" > ~/app/config/application.yml
-            
-            # Green 또는 Blue 서버를 실행할 포트 선택 및 대상 그룹 설정 (Main 환경)
-            EXISTING_CONTAINER=$(docker ps --filter "name=nemo-blue-dev" --filter "status=running" --format "{{.Names}}")
-            if [ -n "$EXISTING_CONTAINER" ]; then
-              echo "Blue 서버가 실행 중이므로 Green 서버를 실행합니다."
-              NEW_PORT=5001
-              NEW_CONTAINER_NAME="nemo-green-dev"
-              NEW_TARGET_GROUP_ARN=${{ secrets.DEV_GREEN_TARGET_GROUP_ARN }}  # Dev Green 대상 그룹 ARN
-            else
-              EXISTING_CONTAINER=$(docker ps --filter "name=nemo-green-dev" --filter "status=running" --format "{{.Names}}")
-              if [ -n "$EXISTING_CONTAINER" ]; then
-                echo "Green 서버가 실행 중이므로 Blue 서버를 실행합니다."
-                NEW_PORT=5000
-                NEW_CONTAINER_NAME="nemo-blue-dev"
-                NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}  # Dev Blue 대상 그룹 ARN
-              else
-                echo "실행 중인 서버가 없으므로 기본적으로 Blue 서버를 실행합니다."
-                NEW_PORT=5000
-                NEW_CONTAINER_NAME="nemo-blue-dev"
-                NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}  # Dev Blue 대상 그룹 ARN
-              fi
-            fi
-            
-            # 새로운 컨테이너 실행
-            docker run -d -p $NEW_PORT:8080 --name $NEW_CONTAINER_NAME \
-              -v ~/app/config/application.yml:/app/application.yml \
-              -e SPRING_PROFILES_ACTIVE=dev \
-              -e FILE_UPLOAD_DIR=/app/static \
-              ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
-
-      - name: ALB 트래픽 전환 및 헬스체크 (develop 브랜치)
-        if: github.ref == 'refs/heads/develop'
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.DEV_SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # ALB에서 타겟 그룹을 새로운 대상 그룹으로 전환 (Dev 환경)
-            aws elbv2 modify-listener --listener-arn ${{ secrets.DEV_ALB_LISTENER_ARN }} \
-              --default-actions Type=forward,TargetGroupArn=$NEW_TARGET_GROUP_ARN
-            
-            # Health Check 상태를 확인
-            RETRY_LIMIT=5
-            RETRY_INTERVAL=10
-            SUCCESS_COUNT=0
-            
-            for ((i=1; i<=RETRY_LIMIT; i++))
-            do
-              echo "트래픽 상태 확인: $i 번째 시도"
-            
-              HEALTHY_HOST_COUNT=$(aws elbv2 describe-target-health --target-group-arn $NEW_TARGET_GROUP_ARN --query 'TargetHealthDescriptions[?TargetHealth.State==`healthy`]' | jq length)
-            
-              if [ "$HEALTHY_HOST_COUNT" -gt 1 ]; then
-                echo "서버가 충분한 트래픽을 처리하고 있습니다."
-                SUCCESS_COUNT=$((SUCCESS_COUNT+1))
-            
-                if [ "$SUCCESS_COUNT" -eq 3 ]; then
-                  echo "트래픽이 안정되었으므로 이전 서버 종료를 준비합니다."
-                  break
-                fi
-              else
-                echo "서버가 준비되지 않았습니다. 다시 확인합니다."
-                SUCCESS_COUNT=0
-              fi
-            
-              sleep $RETRY_INTERVAL
-            done
-            
-            if [ "$SUCCESS_COUNT" -lt 3 ]; then
-              echo "트래픽 전환이 완료되지 않았습니다. 이전 서버 종료를 중지합니다."
-              exit 1
-            fi            
-            
-            # 이전 서버 중지 (이전 서버가 있는 경우에만 중지)
-            EXISTING_GREEN_CONTAINER=$(docker ps --filter "name=nemo-green-dev" --filter "status=running" --format "{{.Names}}")
-            EXISTING_BLUE_CONTAINER=$(docker ps --filter "name=nemo-blue-dev" --filter "status=running" --format "{{.Names}}")
-
-            if [ -n "$EXISTING_GREEN_CONTAINER" ]; then
-              echo "Green 서버가 실행 중이므로 종료합니다."
-              docker stop nemo-green-dev
-              docker rm nemo-green-dev
-            elif [ -n "$EXISTING_BLUE_CONTAINER" ]; then
-              echo "Blue 서버가 실행 중이므로 종료합니다."
-              docker stop nemo-blue-dev
-              docker rm nemo-blue-dev
-            else
-              echo "실행 중인 이전 서버가 없습니다. 종료할 서버가 없습니다."
-            fi
-
-      - name: Docker 컨테이너 로그 출력 (main 브랜치 - Blue/Green 서버)
-        if: github.ref == 'refs/heads/main'
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.MAIN_SERVER_HOST }}  # MAIN 서버
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Blue/Green 서버에 맞춰 Docker 컨테이너 로그 출력
-            EXISTING_CONTAINER=$(docker ps --filter "name=nemo-blue-be" --filter "status=running" --format "{{.Names}}")
-            if [ -n "$EXISTING_CONTAINER" ]; then
-              echo "Blue 서버 로그 출력"
-              docker logs nemo-blue-be || true
-            else
-              echo "Green 서버 로그 출력"
-              docker logs nemo-green-be || true
-
-      - name: Docker 컨테이너 로그 출력 (develop 브랜치 - Blue/Green 서버)
-        if: github.ref == 'refs/heads/develop'
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.DEV_SERVER_HOST }}  # DEV 서버
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Blue/Green 서버에 맞춰 Docker 컨테이너 로그 출력
-            EXISTING_CONTAINER=$(docker ps --filter "name=nemo-blue-dev" --filter "status=running" --format "{{.Names}}")
-            if [ -n "$EXISTING_CONTAINER" ]; then
-              echo "Blue 서버 로그 출력"
-              docker logs nemo-blue-dev || true
-            else
-              echo "Green 서버 로그 출력"
-                docker logs nemo-green-dev || true
+      - name: Docker 컨테이너 로그 출력
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            SERVER_HOST=${{ secrets.MAIN_SERVER_HOST }}
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            SERVER_HOST=${{ secrets.DEV_SERVER_HOST }}
+          fi
+          
+          EXISTING_CONTAINER=$(docker ps --filter "name=nemo-blue" --filter "status=running" --format "{{.Names}}")
+          if [ -n "$EXISTING_CONTAINER" ]; then
+            docker logs nemo-blue
+          else
+            docker logs nemo-green
+          fi
