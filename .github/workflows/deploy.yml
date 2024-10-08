@@ -35,11 +35,12 @@ jobs:
 
       - name: 도커 이미지 빌드 및 Push (브랜치별 구분)
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [[ "$BRANCH_NAME" == "main" ]]; then
             docker build -t nemo-be:${{ github.sha }} .
             docker tag nemo-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
             docker push ${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          elif [[ "$BRANCH_NAME" == "develop" ]]; then
             docker build -t nemo-dev-be:${{ github.sha }} .
             docker tag nemo-dev-be:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
             docker push ${{ secrets.DOCKER_USERNAME }}/nemo-dev-be:${{ github.sha }}
@@ -61,13 +62,14 @@ jobs:
 
       - name: EC2 배포 - Blue/Green 서버 실행 (브랜치별)
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [[ "$BRANCH_NAME" == "main" ]]; then
             SERVER_HOST=${{ secrets.MAIN_SERVER_HOST }}
             NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}
             LISTENER_ARN=${{ secrets.MAIN_ALB_LISTENER_ARN }}
             IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/nemo-be:${{ github.sha }}"
             SPRING_PROFILE=prod
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          elif [[ "$BRANCH_NAME" == "develop" ]]; then
             SERVER_HOST=${{ secrets.DEV_SERVER_HOST }}
             NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}
             LISTENER_ARN=${{ secrets.DEV_ALB_LISTENER_ARN }}
@@ -99,10 +101,11 @@ jobs:
 
       - name: ALB 트래픽 전환 및 헬스체크 (브랜치별)
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [[ "$BRANCH_NAME" == "main" ]]; then
             NEW_TARGET_GROUP_ARN=${{ secrets.MAIN_BLUE_TARGET_GROUP_ARN }}
             LISTENER_ARN=${{ secrets.MAIN_ALB_LISTENER_ARN }}
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          elif [[ "$BRANCH_NAME" == "develop" ]]; then
             NEW_TARGET_GROUP_ARN=${{ secrets.DEV_BLUE_TARGET_GROUP_ARN }}
             LISTENER_ARN=${{ secrets.DEV_ALB_LISTENER_ARN }}
           fi
@@ -124,9 +127,10 @@ jobs:
 
       - name: Docker 컨테이너 로그 출력
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [[ "$BRANCH_NAME" == "main" ]]; then
             SERVER_HOST=${{ secrets.MAIN_SERVER_HOST }}
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          elif [[ "$BRANCH_NAME" == "develop" ]]; then
             SERVER_HOST=${{ secrets.DEV_SERVER_HOST }}
           fi
           
