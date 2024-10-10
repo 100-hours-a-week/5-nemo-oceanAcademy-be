@@ -1,10 +1,7 @@
 package com.nemo.oceanAcademy.common.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.*;
 import com.amazonaws.util.IOUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -13,16 +10,19 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import com.nemo.oceanAcademy.common.exception.S3Exception;
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.Headers;
+
 
 @Slf4j
 @RequiredArgsConstructor
@@ -40,6 +40,70 @@ public class S3ImageService {
         }
         return this.uploadImage(image);
     }
+
+    /**
+     * presigned url 발급
+     * @param prefix 버킷 디렉토리 이름
+     * @param fileName 클라이언트가 전달한 파일명 파라미터
+     * @return presigned url
+     */
+    public String getPreSignedUrl(String prefix, String fileName) {
+        if (prefix != null && !prefix.trim().isEmpty()) {
+            fileName = createPath(prefix, fileName);
+        }
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest = getGeneratePreSignedUrlRequest(bucketName, fileName);
+        URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
+        return url.toString();
+    }
+
+    /**
+     * 파일 업로드용(PUT) presigned url 생성
+     * @param bucket 버킷 이름
+     * @param fileName S3 업로드용 파일 이름
+     * @return presigned url
+     */
+    private GeneratePresignedUrlRequest getGeneratePreSignedUrlRequest(String bucket, String fileName) {
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucket, fileName)
+                        .withMethod(HttpMethod.PUT)
+                        .withExpiration(getPreSignedUrlExpiration());
+        generatePresignedUrlRequest.addRequestParameter(
+                Headers.S3_CANNED_ACL,
+                CannedAccessControlList.PublicRead.toString());
+        return generatePresignedUrlRequest;
+    }
+
+    /**
+     * presigned url 유효 기간 설정
+     * @return 유효기간
+     */
+    private Date getPreSignedUrlExpiration() {
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime();
+        expTimeMillis += 1000 * 60 * 2;
+        expiration.setTime(expTimeMillis);
+        return expiration;
+    }
+
+    /**
+     * 파일 고유 ID를 생성
+     * @return 36자리의 UUID
+     */
+    private String createFileId() {
+        return UUID.randomUUID().toString();
+    }
+
+    /**
+     * 파일의 전체 경로를 생성
+     * @param prefix 디렉토리 경로
+     * @return 파일의 전체 경로
+     */
+    private String createPath(String prefix, String fileName) {
+        String fileId = createFileId();
+        return String.format("%s/%s", prefix, fileId + fileName);
+    }
+
 
     private String uploadImage(MultipartFile image) {
         this.validateImageFileExtention(image.getOriginalFilename());
