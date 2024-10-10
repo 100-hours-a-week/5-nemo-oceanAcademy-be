@@ -49,7 +49,7 @@ jobs:
 
       # 6. SSH로 EC2 서버에 접속하여 JAR 파일 전송 및 실행
       - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v0.1.1
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.LOAD_SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
