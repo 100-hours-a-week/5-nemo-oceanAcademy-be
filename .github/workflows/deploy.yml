@@ -35,22 +35,19 @@ jobs:
           SENTRY_ORG: ktb-0402
           SENTRY_PROJECT: java-spring-boot
 
-      # 5. Private Key 파일 생성 및 OpenSSH 형식으로 변환
-      - name: Create SSH private key
-        run: |
-          echo "${{ secrets.LOAD_SSH_PRIVATE_KEY }}" > /tmp/private_key
-          chmod 600 /tmp/private_key
+      # 5. SCP로 JAR 파일을 EC2로 전송 (패턴 사용)
+      - name: Deploy build outputs
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.LOAD_SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.LOAD_SSH_PRIVATE_KEY }}
+          port: 22
+          source: "build/libs/oceanAcademy-*.jar" # oceanAcademy로 시작하는 모든 JAR 파일 전송
+          strip_components: 1
+          target: "/home/ubuntu/code/"
 
-      # 6. SCP로 JAR 파일을 EC2로 전송 (SFTP 대신 SCP 강제)
-      - name: Deploy to EC2 via SCP (forced SCP mode)
-        run: |
-          scp -o ConnectTimeout=30 -T -v -i /tmp/private_key -o StrictHostKeyChecking=no ./build/libs/oceanAcademy-0.0.1-SNAPSHOT.jar ${{ secrets.SERVER_USER }}@${{ secrets.LOAD_SERVER_HOST }}:${{ secrets.REMOTE_PROJECT_PATH }}/
-
-      # 7. Private Key 파일 삭제 (보안)
-      - name: Delete private key
-        run: rm /tmp/private_key
-
-      # 8. SSH로 EC2 서버에 접속하여 JAR 파일 전송 및 실행
+      # 6. SSH로 EC2 서버에 접속하여 JAR 파일 전송 및 실행
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.1
         with:
