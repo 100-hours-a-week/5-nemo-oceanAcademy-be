@@ -2,7 +2,9 @@ package com.nemo.oceanAcademy.domain.classroom.application.service;
 import com.nemo.oceanAcademy.common.s3.S3ImageUtils;
 import com.nemo.oceanAcademy.domain.classroom.application.dto.*;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.Classroom;
+import com.nemo.oceanAcademy.domain.classroom.dataAccess.entity.PopularityRank;
 import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.ClassroomRepository;
+import com.nemo.oceanAcademy.domain.classroom.dataAccess.repository.PopularityRankRepository;
 import com.nemo.oceanAcademy.domain.participant.application.dto.ParticipantResponseDto;
 import com.nemo.oceanAcademy.domain.category.dataAccess.entity.Category;
 import com.nemo.oceanAcademy.domain.category.dataAccess.repository.CategoryRepository;
@@ -15,9 +17,9 @@ import com.nemo.oceanAcademy.domain.user.dataAccess.repository.UserRepository;
 import com.nemo.oceanAcademy.common.exception.ResourceNotFoundException;
 import io.sentry.Sentry;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,8 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import io.sentry.Sentry;
@@ -50,6 +51,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ClassroomService {
+    @Autowired
+    private PopularityRankRepository popularityRankRepository;
 
     private final ClassroomRepository classroomRepository;
     private final CategoryRepository categoryRepository;
@@ -90,11 +93,46 @@ public class ClassroomService {
         }
     }
 
+    // top10강의 조회
+    public List<ClassroomResponseDto> findTop10Classrooms() {
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 1. 인기 순위에 따라 Top 10 강의 조회
+        //List<ClassroomResponseDto> topRankedClassrooms = popularityRankRepository.findTopRankedClassrooms();
+        List<PopularityRank> a = popularityRankRepository.findAllByOrderByRankingAsc(pageable);
+        // 2. DTO 리스트를 생성합니다.
+        List<ClassroomResponseDto> classroomResponseDtos = new ArrayList<>();
+
+        for (PopularityRank rank : a) {
+            System.out.println(rank.getClassroom().getId());
+        }
+
+        // 3. 각 PopularityRank에서 Classroom을 가져와 DTO를 생성하고 리스트에 추가
+        for (PopularityRank rank : a) {
+            System.out.println(rank.getClassroom().getId());
+            ClassroomResponseDto dto = new ClassroomResponseDto(rank.getClassroom()); // Classroom을 이용해 DTO 생성
+            System.out.println(dto.getId());
+            classroomResponseDtos.add(dto); // DTO를 리스트에 추가
+        }
+        return classroomResponseDtos;
+
+
+        // 2. 조회된 결과가 부족하거나 비어 있으면 랜덤 클래스를 가져옴
+//        if (topRankedClassrooms.size() < 10) {
+//            int remainingSlots = 10 - topRankedClassrooms.size();
+//            // 랜덤 클래스를 추가로 가져오는 로직
+//            List<ClassroomResponseDto> randomClassrooms = classroomRepository.findRandomClassrooms(PageRequest.of(0, remainingSlots));
+//
+//            // 3. 기존 인기 순위 클래스와 랜덤 클래스를 합침
+//            topRankedClassrooms.addAll(randomClassrooms);
+//        }
+
+    }
+
     // 강의 필터링 및 페이징 처리
     public List<ClassroomResponseDto> getFilteredClassrooms(String target, Integer categoryId, String userId, int page, int pageSize) {
         try {
             Pageable pageable = PageRequest.of(page, pageSize);
-
             if (target != null) {
                 switch (target) {
                     case "live":
@@ -103,6 +141,8 @@ public class ClassroomService {
                         return classroomRepository.findEnrolledClassrooms(categoryId, userId, pageable);
                     case "created":
                         return classroomRepository.findCreatedClassrooms(categoryId, userId, pageable);
+                    case "topten":
+                        return findTop10Classrooms();//getTopClassrooms(0,10); //getTop10ClassroomsByRanking(); //findTop10Classrooms();
                     default:
                         return getAllClassrooms(pageable);
                 }
