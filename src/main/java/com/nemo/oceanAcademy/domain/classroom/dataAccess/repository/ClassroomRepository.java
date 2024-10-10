@@ -47,6 +47,11 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long> {
         List<ClassroomResponseDto> findTopTenClassrooms(@Param("categoryId") Integer categoryId, Pageable pageable);
      */
 
+    // 강의 랜덤 조회
+    @Query(value = "SELECT new com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto(c) " +
+            "FROM Classroom c ORDER BY RAND()")
+    List<ClassroomResponseDto> findRandomClassrooms(Pageable pageable);
+
     // 전체 강의 조회
     @Query("SELECT new com.nemo.oceanAcademy.domain.classroom.application.dto.ClassroomResponseDto(c) " +
             "FROM Classroom c " +
