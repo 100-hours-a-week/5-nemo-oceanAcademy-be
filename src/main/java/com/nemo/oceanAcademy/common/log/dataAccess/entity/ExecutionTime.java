@@ -17,6 +17,8 @@ public class ExecutionTime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private LocalDateTime startedAt;
+
     private String methodName;
 
     private Long executionTime; // 실행 시간(ms)

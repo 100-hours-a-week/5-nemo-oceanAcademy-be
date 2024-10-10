@@ -9,6 +9,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Aspect
 @Component
@@ -30,6 +31,7 @@ public class TimeTraceAop {
                             + "." + joinPoint.getSignature().getName())
                     .executionTime(executionTime)
                     .executedAt(LocalDateTime.now())
+                    .startedAt(LocalDateTime.ofEpochSecond(start / 1000, 0, ZoneOffset.UTC)) // 수정된 부분
                     .build();
             executionTimeRepository.save(ex);
         }
