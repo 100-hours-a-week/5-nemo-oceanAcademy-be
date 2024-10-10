@@ -88,6 +88,9 @@ dependencies {
 
 	implementation 'org.springframework.security:spring-security-messaging'
 
+	//spring batch
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
+
 	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
