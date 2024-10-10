@@ -68,7 +68,7 @@ jobs:
               -Dcom.sun.management.jmxremote.authenticate=false \
               -Djava.rmi.server.hostname=${{ secrets.LOAD_SERVER_HOST }} \
               -Dcom.sun.management.jmxremote.rmi.port=${{ secrets.VISUAL_JVM_PORT }} \
-              -jar ${{ secrets.REMOTE_PROJECT_PATH }}/oceanAcademy-0.0.1-SNAPSHOT.jar > ${{ secrets.REMOTE_PROJECT_PATH }}/output.log 2>&1 & disown
+              -jar /home/${{ secrets.SERVER_USER }}/code/libs/oceanAcademy-0.0.1-SNAPSHOT.jar > /home/${{ secrets.SERVER_USER }}/code/libs/output.log 2>&1 & disown
             
             # ServerAgent가 실행 중인지 확인하는 명령어
             if pgrep -f 'ServerAgent' > /dev/null; then
