@@ -56,29 +56,4 @@ jobs:
           key: ${{ secrets.LOAD_SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            # 서버에서 기존 실행 중인 애플리케이션 종료
-            pkill -f 'oceanAcademy-0.0.1-SNAPSHOT.jar' || true
-            
-            # 종료를 기다리기 (예: 5초 대기)
-            echo "Waiting for the application to shut down..."
-            sleep 5
-            
-            # JAR 파일 실행 
-            nohup java \
-              -Dcom.sun.management.jmxremote \
-              -Dcom.sun.management.jmxremote.local.only=false \
-              -Dcom.sun.management.jmxremote.port=${{ secrets.VISUAL_JVM_PORT }} \
-              -Dcom.sun.management.jmxremote.ssl=false \
-              -Dcom.sun.management.jmxremote.authenticate=false \
-              -Djava.rmi.server.hostname=${{ secrets.LOAD_SERVER_HOST }} \
-              -Dcom.sun.management.jmxremote.rmi.port=${{ secrets.VISUAL_JVM_PORT }} \
-              -jar /home/${{ secrets.SERVER_USER }}/code/libs/oceanAcademy-0.0.1-SNAPSHOT.jar > /home/${{ secrets.SERVER_USER }}/code/libs/output.log 2>&1 & disown
-            
-            # ServerAgent가 실행 중인지 확인하는 명령어
-            if pgrep -f 'ServerAgent' > /dev/null; then
-                echo "ServerAgent is already running."
-            else
-                echo "Starting ServerAgent..."
-                cd /opt/ServerAgent-2.2.3
-                sudo ./startAgent.sh --tcp-port ${{ secrets.SERVER_AGENT_PORT }} --udp-port 0
-            fi
+            /home/${{ secrets.SERVER_USER }}/stop_and_start.sh
