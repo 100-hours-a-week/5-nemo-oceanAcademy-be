@@ -15,6 +15,11 @@ public class ClassroomUpdateDto {
     @JsonProperty("name")
     private String name;
 
+    // 카테고리 ID
+    @Column(nullable = true)
+    @JsonProperty("categoryId")
+    private Integer categoryId;
+
     // 강의 목표 (선택)
     @Column(nullable = true)
     @JsonProperty("object")

@@ -91,6 +91,8 @@ dependencies {
 	//spring batch
 	implementation 'org.springframework.boot:spring-boot-starter-batch'
 
+	// Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
 }
 
