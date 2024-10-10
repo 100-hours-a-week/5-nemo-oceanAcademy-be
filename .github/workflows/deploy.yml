@@ -35,6 +35,11 @@ jobs:
           SENTRY_ORG: ktb-0402
           SENTRY_PROJECT: java-spring-boot
 
+      # 5. GitHub Actions에서 EC2로 JAR 파일 전송
+      - name: Deploy to EC2 via SCP
+        run: |
+          scp -i ${{ secrets.LOAD_SSH_PRIVATE_KEY }} -o StrictHostKeyChecking=no ./build/libs/oceanAcademy-0.0.1-SNAPSHOT.jar ${{ secrets.SERVER_USER }}@${{ secrets.LOAD_SERVER_HOST }}:${{ secrets.REMOTE_PROJECT_PATH }}/
+
       # 5. SSH로 EC2 서버에 접속하여 JAR 파일 전송 및 실행
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.1
@@ -46,8 +51,6 @@ jobs:
           script: |
             # 서버에서 기존 실행 중인 애플리케이션 종료
             pkill -f 'oceanAcademy-0.0.1-SNAPSHOT.jar' || true
-            # JAR 파일을 서버에 업로드
-            scp -i ${{ secrets.LOAD_SSH_PRIVATE_KEY }} ./build/libs/oceanAcademy-0.0.1-SNAPSHOT.jar ${{ secrets.SERVER_USER }}@${{ secrets.LOAD_SERVER_HOST }}:${{ secrets.REMOTE_PROJECT_PATH }}
             # JAR 파일 실행 (nohup으로 백그라운드 실행)
             nohup java \
               -Dcom.sun.management.jmxremote \
