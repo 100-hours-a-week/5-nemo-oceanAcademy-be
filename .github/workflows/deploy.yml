@@ -38,9 +38,8 @@ jobs:
       # 5. Private Key 파일 생성 및 OpenSSH 형식으로 변환
       - name: Create SSH private key
         run: |
-          echo "${{ secrets.LOAD_SSH_PRIVATE_KEY }}" > /tmp/private_key.pem
-          chmod 600 /tmp/private_key.pem
-          ssh-keygen -p -m PEM -f /tmp/private_key.pem -N "" -q -o /tmp/private_key
+          echo "${{ secrets.LOAD_SSH_PRIVATE_KEY }}" > /tmp/private_key
+          chmod 600 /tmp/private_key
 
       # 6. SCP로 JAR 파일을 EC2로 전송 (SFTP 대신 SCP 강제)
       - name: Deploy to EC2 via SCP (forced SCP mode)
