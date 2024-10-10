@@ -44,7 +44,7 @@ jobs:
       # 6. SCP로 JAR 파일을 EC2로 전송
       - name: Deploy to EC2 via SCP
         run: |
-          scp -i /tmp/private_key -o StrictHostKeyChecking=no ./build/libs/oceanAcademy-0.0.1-SNAPSHOT.jar ${{ secrets.SERVER_USER }}@${{ secrets.LOAD_SERVER_HOST }}:${{ secrets.REMOTE_PROJECT_PATH }}/
+          scp -v -i /tmp/private_key -o StrictHostKeyChecking=no ./build/libs/oceanAcademy-0.0.1-SNAPSHOT.jar ${{ secrets.SERVER_USER }}@${{ secrets.LOAD_SERVER_HOST }}:${{ secrets.REMOTE_PROJECT_PATH }}/
 
       # 7. Private Key 파일 삭제 (보안)
       - name: Delete private key
