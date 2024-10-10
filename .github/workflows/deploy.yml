@@ -35,12 +35,22 @@ jobs:
           SENTRY_ORG: ktb-0402
           SENTRY_PROJECT: java-spring-boot
 
-      # 5. GitHub Actions에서 EC2로 JAR 파일 전송
+      # 5. Private Key 파일 생성
+      - name: Create SSH private key
+        run: |
+          echo "${{ secrets.LOAD_SSH_PRIVATE_KEY }}" > /tmp/private_key
+          chmod 600 /tmp/private_key
+
+      # 6. SCP로 JAR 파일을 EC2로 전송
       - name: Deploy to EC2 via SCP
         run: |
-          scp -i ${{ secrets.LOAD_SSH_PRIVATE_KEY }} -o StrictHostKeyChecking=no ./build/libs/oceanAcademy-0.0.1-SNAPSHOT.jar ${{ secrets.SERVER_USER }}@${{ secrets.LOAD_SERVER_HOST }}:${{ secrets.REMOTE_PROJECT_PATH }}/
+          scp -i /tmp/private_key -o StrictHostKeyChecking=no ./build/libs/oceanAcademy-0.0.1-SNAPSHOT.jar ${{ secrets.SERVER_USER }}@${{ secrets.LOAD_SERVER_HOST }}:${{ secrets.REMOTE_PROJECT_PATH }}/
 
-      # 5. SSH로 EC2 서버에 접속하여 JAR 파일 전송 및 실행
+      # 7. Private Key 파일 삭제 (보안)
+      - name: Delete private key
+        run: rm /tmp/private_key
+
+      # 8. SSH로 EC2 서버에 접속하여 JAR 파일 전송 및 실행
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.1
         with:
